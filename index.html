@@ -232,14 +232,14 @@
   }
 
   .grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+    gap: 10px;
   }
 
   /* ── Cards ── */
   .card {
-    width: var(--card-w);
+    width: 100%;
     background: var(--unseen-bg);
     border: 1.5px solid var(--unseen-border);
     border-radius: var(--radius);
