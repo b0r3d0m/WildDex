@@ -173,6 +173,29 @@
   }
   .result-count { margin-left: auto; font-size: 0.8rem; color: var(--text-muted); }
 
+  .state-select-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px 4px 8px;
+    transition: border-color 0.2s;
+  }
+  .state-select-wrap:focus-within { border-color: var(--accent); }
+  .state-select-icon { font-size: 0.85rem; line-height: 1; }
+  .state-select {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 0.82rem;
+    outline: none;
+    cursor: pointer;
+    min-width: 110px;
+  }
+  .state-select option { background: #1e2e1e; color: var(--text); }
+
   /* ── Grid ── */
   main {
     padding: 20px 24px;
@@ -551,6 +574,12 @@
   <button class="filter-btn active" data-filter="all">All</button>
   <button class="filter-btn" data-filter="unseen">Not Yet Seen</button>
   <button class="filter-btn" data-filter="seen">Seen ✓</button>
+  <div class="state-select-wrap">
+    <span class="state-select-icon">📍</span>
+    <select id="state-select" class="state-select">
+      <option value="">All States</option>
+    </select>
+  </div>
   <span class="result-count" id="result-count"></span>
 </div>
 
@@ -932,12 +961,359 @@ const ANIMALS = [
   { id:300,name:'Mantis Shrimp',          sci:'Stomatopoda spp.',             cat:'insect',    emoji:'🦐', range:'Pacific & Atlantic coasts', desc:'Has 16 types of color receptors (humans have 3) and can see ultraviolet, infrared, and polarized light. Its "smasher" club can strike with the force of a .22 caliber bullet, shattering aquarium glass.' },
 ];
 
-// ── State ──────────────────────────────────────────────────────────────────
+// ── State regions ─────────────────────────────────────────────────────────
+const STATE_NAMES = {
+  AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',
+  CT:'Connecticut',DE:'Delaware',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',
+  IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',
+  ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',
+  MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',
+  NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',
+  OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',
+  TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',
+  WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'
+};
+
+const _ALL  = Object.keys(STATE_NAMES);
+const _CONUS= _ALL.filter(s=>s!=='AK'&&s!=='HI');
+const _E    = ['ME','NH','VT','MA','RI','CT','NY','NJ','PA','DE','MD','VA','WV','NC','SC','GA','FL','OH','MI','IN','IL','WI','MN','IA','MO','KY','TN','AL','MS'];
+const _W    = ['WA','OR','CA','NV','ID','MT','WY','CO','UT','AZ','NM'];
+const _ATL  = ['ME','NH','MA','RI','CT','NY','NJ','DE','MD','VA','NC','SC','GA','FL'];
+const _GULF = ['FL','AL','MS','LA','TX'];
+const _PAC  = ['CA','OR','WA','AK'];
+const _SE   = ['FL','GA','SC','NC','AL','MS','LA','AR','TN','KY','VA','WV'];
+const _GP   = ['ND','SD','NE','KS','OK','TX','MN','IA','MO','MT','WY','CO'];
+
+function u(...args) { return [...new Set(args.flat())]; }
+
+const ANIMAL_STATES = {
+  // ── Mammals original ──
+  1:  _CONUS,
+  2:  u(['ME','NH','VT','NY','PA','WV','VA','NC','TN','GA','AL','MI','WI','MN','IN','OH'],_W,['AK']),
+  3:  _ALL.filter(s=>s!=='HI'),
+  4:  u(_CONUS,['AK']),
+  5:  u(_CONUS,['AK']),
+  6:  u(_CONUS,['AK']),
+  7:  ['ME','NH','VT','NY','MI','MN','WI','MT','ID','WY','WA','OR','UT','CO','ND','SD','AK'],
+  8:  ['WY','MT','SD','OK','UT','AZ','KS','TX','ND','CO','NE','MN','ID','OR','CA'],
+  9:  _CONUS,
+  10: _CONUS,
+  11: u(_E,['TX','OK','NE','KS','CO','NM','AZ','CA','OR','WA']),
+  12: ['TX','OK','AR','LA','MS','AL','FL','GA','SC','NC','TN','KS','MO','NM','AZ','CA','CO','NE'],
+  13: ['WA','OR','CA','NV','ID','MT','WY','CO','UT','AZ','NM','TX','OK','SD','ND','NE','KS'],
+  14: ['WA','OR','ID','MT','WY','CO','UT','AZ','NM','SD','ND','MN','CA','NV','TX','OK','PA','KY','TN','VA','NC'],
+  15: ['ID','MT','WY','MN','WI','MI','WA','OR','AZ','NM'],
+  16: _CONUS,
+  17: ['WA','OR','CA','ID','MT','NV','UT','CO','WY','AZ','NM','TX','OK','SD','ND','FL'],
+  18: ['ME','NH','VT','NY','MI','MN','WI','MT','ID','WA','OR','CO','WY'],
+  19: ['ME','NH','VT','NY','PA','MA','MI','WI','MN','MT','ID','WA','OR','WY','CA'],
+  20: ['ME','NH','VT','NY','MI','WI','MN','MT','ID','WA','OR','WY','CA'],
+  21: ['WA','OR','CA','ID','MT','WY','CO','UT','AZ','NM','TX','OK','NE','KS','SD','ND','MN','IA','MO','IL','IN','OH','WI'],
+  22: u(_CONUS,['AK']),
+  23: u(['ME','NH','VT','NY','PA','WV','VA','NC','MI','WI','MN','MO','IA'],_W.filter(s=>!['NV','AZ'].includes(s)),['AK']),
+  24: _CONUS,
+  25: u(_E,['TX','OK','NE','KS','CO','NM','AZ']),
+  26: ['ME','NH','VT','NY','MI','MN','WI','MT','ID','WA','OR','WY','CO','ND','SD','AK'],
+  27: ['CA','OR','NV','AZ','NM','TX','OK','CO','UT','ID','WA','KS','NE','SD','ND','MN','WY'],
+  28: ['WA','OR','CA','ID','MT','WY','CO','UT','NV','NM','AZ'],
+  29: ['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM','ND','SD','TX'],
+  30: ['WA','OR','ID','MT','WY','CO','UT','AK'],
+  31: u(_ATL,['WA','OR','CA','AK']),
+  32: ['CA','OR','WA','AK'],
+  33: ['FL','GA'],
+  34: u(_ATL,_GULF,['CA','OR','WA','HI']),
+  35: u(_ATL,['CA','OR','WA','AK','HI']),
+  36: ['TX','OK','NM','AZ','CA','LA','MS','AL','FL','GA','SC','NC','AR','MO','KS'],
+  37: u(_E,['TX','OK','KS','NE','IA','MN','CO','NM']),
+  38: _E.filter(s=>!['FL','MS','AL'].includes(s)),
+  39: ['TX','NM','AZ','OK'],
+  40: ['FL'],
+  // ── Birds original ──
+  41: u(_CONUS,['AK']),
+  42: u(_W,['TX','OK','KS','NE','SD','ND','MN','AK']),
+  43: u(_CONUS,['AK']),
+  44: u(_CONUS,['AK']),
+  45: u(_CONUS,['AK']),
+  46: u(_CONUS,['AK']),
+  47: ['ND','SD','MN','WI','MI','NY','ME','NH','VT','MA','CT','RI','NJ','PA','OH','IN','IL','MT','ID','WA','OR','WY','CO','NE','IA','MO'],
+  48: _E,
+  49: u(_CONUS,['AK']),
+  50: u(_E,['TX','OK','KS','NE','IA','MN','SD','CO','NM']),
+  51: _E,
+  52: u(_CONUS,['AK']),
+  53: u(_W,['AK','TX','OK','MN','WI','MI','NY','ME','NH','VT']),
+  54: u(_CONUS,['AK']),
+  55: u(_CONUS,['AK']),
+  56: _CONUS,
+  57: u(_CONUS,['AK']),
+  58: u(_CONUS,['AK']),
+  59: u(_CONUS,['AK']),
+  60: _CONUS,
+  61: u(_E,['TX','OK','KS','NE','IA']),
+  62: ['CA','OR','WA','AK','AZ','NV'],
+  63: u(_E.filter(s=>!['ND','SD','NE','KS'].includes(s)),['WA','OR','CA']),
+  64: u(_CONUS,['AK']),
+  65: u(_CONUS,['AK']),
+  66: u(_CONUS,['AK']),
+  67: _E.filter(s=>!['FL','GA','SC','AL','MS'].includes(s)),
+  68: ['TX','LA','MS','AL','FL','GA','SC','NC','OK','AR','TN','KS','NE','NM'],
+  69: _E,
+  70: ['ME','NH','VT','NY','MI','MN','WI','MT','ID','WA','OR','ND','SD','AK'],
+  71: u(_ATL,_GULF,['CA','OR','WA']),
+  72: ['FL','TX','LA'],
+  73: ['TX'],
+  74: ['CA','AZ','UT','NV','NM','TX','OR','ID','CO'],
+  75: u(_CONUS,['AK']),
+  76: ['WA','OR','CA','AK'],
+  77: ['CA','OR','WA','ID','NV','UT','CO','WY','MT','ND','SD','NE','KS','TX','OK','MN','IA','NM','AZ'],
+  78: ['CA','OR','WA','AK'],
+  79: _E,
+  80: ['TX','OK','KS','NE','SD','ND','MN','MO','AR','LA','NM','CO'],
+  // ── Reptiles original ──
+  81: ['FL','GA','SC','NC','AL','MS','LA','TX','AR','OK','TN'],
+  82: ['FL'],
+  83: _E,
+  84: u(_CONUS,['AK']),
+  85: u(_E,['TX','OK','KS','NE','IA','MN']),
+  86: ['CA','NV','UT','AZ'],
+  87: u(_ATL,_GULF,['CA']),
+  88: u(_ATL,_GULF),
+  89: ['TX','NM','AZ','OK','CA','NV','UT','CO','KS','AR','LA','MS','AL','FL','GA'],
+  90: ['ME','NH','VT','NY','PA','WV','VA','NC','TN','GA','AL','KY','OH','MA','CT','RI','NJ','DE','MD','IN','MI','WI','MN','MO','AR','MS'],
+  91: u(_CONUS,['AK']),
+  92: u(_E,['TX','OK','KS','NE','IA','MN','SD','ND','CO']),
+  93: ['FL','GA','SC','NC','AL','MS','LA','TX','AR','TN'],
+  94: ['AZ','NM','CA','NV','UT','CO','TX'],
+  95: ['WA','OR','CA','ID','NV','UT','MT','WY','CO','AZ','NM'],
+  96: ['TX','OK','KS','NE','SD','ND','NM','AZ','CO','MO','AR','LA','MS'],
+  97: ['FL','GA','SC','NC','AL','MS','LA','TX','TN','AR'],
+  98: ['TX','NM','AZ','OK','KS','CO','UT','NV','CA','MO','AR'],
+  99: ['FL','GA','SC','NC','AL','MS','LA','TX','AR','TN','KY','MO','OK','VA','IN','IL'],
+  100:['TX','OK','KS','NE','MO','AR','LA','MS','AL','FL','GA','SC','NC','TN','KY','VA','WV','MD','DE','NJ','NY','PA','OH','IN','IL','IA','MN','WI','MI'],
+  // ── Amphibians original ──
+  101:_CONUS,
+  102:u(_E.filter(s=>!['FL','GA','SC','AL','MS'].includes(s)),['ND','SD','NE','KS','MN','IA','MO','CO']),
+  103:_E,
+  104:_E,
+  105:_E.filter(s=>s!=='FL'),
+  106:['CA','OR','WA','ID','NV','AZ'],
+  107:u(_CONUS,['AK']),
+  108:_E.filter(s=>!['FL','GA','SC','AL','MS'].includes(s)),
+  109:['NY','PA','WV','VA','NC','TN','KY','OH','IN','IL','MO','AR','GA','AL','SC','MD','NJ','DE'],
+  110:_E,
+  111:_E,
+  112:u(['ME','NH','VT','NY','PA','WV','VA','NC','TN','KY','OH','IN','IL','WI','MN','MI','MO','IA','ND','SD','NE','KS']),
+  113:['WA','OR','CA','ID','MT'],
+  114:u(_E,['TX','OK','KS','NE','IA','MN','SD']),
+  115:u(_W,_GP,['IA','MO','KY','TN','AR','LA','MS','AL']),
+  // ── Fish original ──
+  116:_CONUS,
+  117:u(_W,['CO','WY','MT','ID','WA','OR','CA','AK']),
+  118:u(_E.filter(s=>!['FL','GA','SC','AL','MS','LA','TX'].includes(s)),['AK']),
+  119:['WA','OR','CA','ID','MT','AK'],
+  120:['WA','OR','CA','ID','AK'],
+  121:u(_E,['TX','OK','KS','NE','IA','MN','SD','CO','NM','AZ','CA','OR','WA']),
+  122:['MN','WI','MI','OH','IN','IL','IA','MO','ND','SD','NE','MT','WY','CO','NY','PA','ME','NH','VT','KS'],
+  123:['MN','WI','MI','OH','IN','IL','IA','MO','ND','SD','NE','MT','WY','CO','NY','PA','ME','NH','VT','MA','CT','RI'],
+  124:_CONUS.filter(s=>!['WA','OR','CA','NV','UT','MT','ID','WY'].includes(s)),
+  125:['MN','WI','MI','OH','IN','IL','IA','MO','ND','SD','NE','NY','PA','WV','VA','KY','TN','OK','KS','MT','WY','CO'],
+  126:['MN','WI','MI','OH','IN','IL','IA','MO','ND','SD','NE','KS','OK','TX','AR','LA','MS','AL','TN','KY','PA','VA','WV'],
+  127:['TX','LA','MS','AL','FL','GA','SC','TN','AR','OK','MO','IL','IN','OH','KY'],
+  128:u(_ATL,_GULF.filter(s=>!['AL','MS'].includes(s))),
+  129:['WA','OR','ID','AK'],
+  130:['MN','WI','MI','OH','IN','IL','NY','PA','WV','VA','TN','KY','MO','IA'],
+  // ── Invertebrates original ──
+  131:_CONUS,
+  132:_E,
+  133:_E,
+  134:u(_E,['TX','OK','KS','NE','IA','MN','SD']),
+  135:u(_E,['TX','OK','KS','NE','IA','MN','SD','ND','CO']),
+  136:_CONUS,
+  137:_CONUS,
+  138:u(_ATL,_GULF.filter(s=>!['AL','MS'].includes(s))),
+  139:_ATL,
+  140:u(_ATL.filter(s=>!['ME','NH'].includes(s)),_GULF),
+  141:_CONUS,
+  142:_E,
+  143:_E,
+  144:['CA','OR','WA','AK'],
+  145:['OK','TX','OH','AR','MA','RI','SD','NE','KS','MO','IN','KY','ME','NH','VT','NY','PA','NJ','IL'],
+  // ── Additional mammals ──
+  146:['AZ','CA','NV','UT','CO','WY','OR','ID','MT','NM','TX'],
+  147:['AZ','NM','TX'],
+  148:_GP,
+  149:['AZ','NM','TX','CA','NV','UT','CO','OK'],
+  150:['CA','OR','NV','UT','ID','WY','CO','AZ','NM','WA','ND','SD','NE','KS','MO','IA','MN'],
+  151:['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM'],
+  152:['WA','OR','ID','MT','AK'],
+  153:['CA','OR','WA','NV','UT','AZ','NM','ID','MT','WY','CO'],
+  154:_GP,
+  155:['WA','OR','CA','ID','MT','NV','UT','CO','AZ','NM','WY'],
+  156:_GP,
+  157:['WY','CO','UT','MT'],
+  158:_CONUS,
+  159:['ME','NH','VT','NY','MI','WI','MN','MT','ID','WA','OR','WY','CO','ND','SD','AK'],
+  160:['ME','NH','VT','NY','MI','WI','MN','MT','ID','WA','OR','WY','CO','ND','AK'],
+  161:['MT','ID','WY','CO','WA','OR','CA','AK'],
+  162:['TX','NM','AZ','NV','UT','CA','OR','CO'],
+  163:_CONUS,
+  164:['CA','OR','NV','UT','AZ','NM','TX','CO','ID'],
+  165:_GP,
+  166:['OR','CA','NV','ID','UT','AZ','NM','WY','MT','CO','WA','ND','SD','NE','OK','TX'],
+  167:['SD','WY','CO','MT','AZ','TX','KS','NE','ND','UT','OK'],
+  168:u(['ME','NH','VT','NY','PA','WV','VA','NC','TN','MI','WI','MN','MO','IA'],_W.filter(s=>!['NV','AZ','NM'].includes(s)),['AK']),
+  169:['MT','ID','WY','CO','WA','OR','CA','AK','SD','UT','NV'],
+  170:['AK'],
+  171:['AK','MN'],
+  172:['AK'],
+  173:['CA','OR','WA','AK'],
+  174:['CA','OR','WA','AK'],
+  175:['CA','OR','WA'],
+  176:['CA','OR','WA','AK'],
+  177:['TX','NM','AZ','OK'],
+  // ── Additional birds ──
+  178:['CA','OR','NV','UT','AZ','NM','TX','OK','KS','CO'],
+  179:_CONUS,
+  180:u(_CONUS,['AK']),
+  181:['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM','TX','OK','KS','NE','SD','ND','MN','IA','MO'],
+  182:['ND','SD','NE','KS','OK','MN','IA','MO','CO','WY','MT','IL','IN','OH','MI','WI','TX'],
+  183:['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM','ND','SD','NE','KS','OK'],
+  184:['CA','OR','WA','ID','MT','NV','UT','CO','AZ','NM','TX','OK','KS','NE','SD','ND','MN','IA','FL'],
+  185:['MT','ID','WY','MN','WI','MI','NY','ME','NH','VT','MA','OR','WA','ND','SD','AK'],
+  186:u(_CONUS,['AK']),
+  187:u(_CONUS,['AK']),
+  188:u(_CONUS,['AK']),
+  189:u(_CONUS,['AK']),
+  190:u(_CONUS,['AK']),
+  191:['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM'],
+  192:['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM'],
+  193:_E,
+  194:_E,
+  195:u(_CONUS,['AK']),
+  196:u(_CONUS,['AK']),
+  197:_E,
+  198:u(_GULF,['FL','GA','SC','NC']),
+  199:u(['ME','NH','VT','NY','PA','WV','VA','NC','TN','KY','OH','IN','IL','WI','MN','MI','MO','IA','ND','SD'],_E.filter(s=>!['FL','GA','SC','AL','MS'].includes(s))),
+  200:_E,
+  // ── Additional reptiles ──
+  201:['FL','GA','SC','NC','AL','MS','LA','TX'],
+  202:['CA','NV','AZ','UT'],
+  203:['CA','NV','AZ','UT'],
+  204:_CONUS,
+  205:['FL','GA','SC','NC','AL','MS'],
+  206:['CA','OR','WA','ID','NV','UT','MT','WY','CO','AZ','NM','TX','OK','KS','NE','SD','ND'],
+  207:u(_E,['TX','OK','KS','NE','SD','ND','MN','IA','MO','CO']),
+  208:['MI','WI','MN','OH','IN','IL','IA','MO','KS','NE','SD','ND','TX','OK','NY','PA','OH','CO','WY','MT','NM'],
+  209:u(_E,['TX','OK','KS','NE','SD','ND','MN','IA','MO','CO']),
+  210:_E,
+  // ── Additional amphibians ──
+  211:u(_CONUS,['AK']),
+  212:_E.filter(s=>!['AL','MS','FL'].includes(s)),
+  213:['AZ','NM','TX','NV','CA','OK','CO','UT','SD','ND','NE','KS','IA','MO','AR'],
+  214:['CA'],
+  215:['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM'],
+  216:['FL','GA','SC','NC','AL','MS','LA','TX','AR','TN'],
+  217:['FL','GA','SC','NC','AL','MS','LA','TX','AR','TN','VA'],
+  218:['ME','NH','VT','MA','RI','CT','NY','NJ','PA','DE','MD','VA','WV','NC','TN','KY','OH','IN','IL','WI','MN','MI','MO','IA'],
+  // ── Additional fish ──
+  219:u(_ATL,_GULF,['VT','NH','ME','NY','PA','CT','MA','RI','NJ','MD','DE','VA','NC','SC','GA','FL','TX','LA','MS','AL']),
+  220:_E,
+  221:['FL','AL','MS','LA','TX'],
+  222:u(_E,['TX','OK','KS','NE','IA','MN','CO','WY','MT','ID']),
+  223:u(_E.filter(s=>!['FL','GA','SC','AL','MS','LA','TX'].includes(s)),['WA','OR','CA','AK']),
+  224:['ME','NH','MA','CT','RI','NY','VT'],
+  225:['WA','OR','CA','ID','AK'],
+  226:u(_E,['TX','OK','KS','NE','IA','MN','SD','CO','NM','AZ','CA','OR','WA']),
+  // ── Additional invertebrates ──
+  227:['AZ','NM','TX','CA','NV','UT','CO','OK'],
+  228:['AZ','NM','CA','NV','TX'],
+  229:['AZ','CA','NV','NM','TX','UT'],
+  230:_CONUS,
+  231:['TX','OK','KS','NE','IA','MO','AR','LA','MS','AL','TN','KY','OH','IN','IL','WI','MN','ND','SD','MI','WV','VA','GA','SC','NC','FL','NM','CO'],
+  232:_E,
+  233:u(_CONUS,['AK']),
+  234:u(_E,_W,['TX','OK','KS','NE','IA','MN','SD','ND','CO']),
+  235:u(_E,['TX','OK','KS','NE','IA','MN','NM','AZ','CO']),
+  236:['FL','TX','LA','GA','SC','NC','AL','MS','AZ','CA'],
+  237:_E,
+  238:['TX','OK','AZ','NM','KS','CO'],
+  239:u(_E,['TX','OK','KS','NE','SD','ND','MN','IA','MO','CO','NM','AZ','CA','OR','WA']),
+  240:['ME','NH','VT','MA','RI','CT','NY','NJ','PA','DE','MD','VA','WV','NC','TN','KY','OH','IN','IL','WI','MN','MI','MO','IA','GA','SC','AL','TX','OK','KS'],
+  // ── Additional mammals II ──
+  241:['CA'],
+  242:u(_E.filter(s=>!['FL','GA','SC','AL','MS'].includes(s)),['ND','SD','MN','IA','MO']),
+  243:['TX','LA','MS','AL','FL','GA','SC','NC','OR','WA','CA','MD','VA'],
+  244:['WA','OR','CA','AK'],
+  245:['WA','OR','CA','AK'],
+  246:['AK'],
+  247:['AK'],
+  // ── Additional birds II ──
+  248:_CONUS,
+  249:['FL','TX','CT','NY','NJ','MA','RI','IL','CO','OR','WA','CA','NC','GA','AL','VA','MD','PA','OH'],
+  250:['CA','TX'],
+  251:['FL','CA'],
+  252:['ME','NH','MA','RI','CT','NY'],
+  253:u(_ATL.filter(s=>['ME','NH','MA','RI','CT','NY','NJ'].includes(s)),['WA','OR','CA','AK']),
+  254:u(_ATL,_GULF,['CA','OR','WA','AK','MN','WI','MI','OH','IN','IL','NY','PA']),
+  255:u(_ATL.filter(s=>!['ME','NH','VT'].includes(s)),_GULF),
+  256:u(_ATL,_GULF,['CA','TX','OK','KS','NE','SD','ND','CO','WY','MT','MN','IA','MO']),
+  257:u(_ATL.filter(s=>!['ME','NH','VT','MA'].includes(s)),_GULF),
+  258:u(_ATL,_GULF),
+  259:['WA','OR','CA','ID','MT','WY','CO','UT','NV','AZ','NM','TX','OK','KS','NE','SD','ND','MN','IA','MO'],
+  260:['VA','NC','SC','GA','FL','AL','MS','TN','KY','OH','IN','MO','AR','TX','OK','IL','WI','MN','IA','MI','WV','MD','PA','NJ','NY'],
+  261:['MI'],
+  262:u(_CONUS.filter(s=>!['FL','GA','SC','AL','MS','LA'].includes(s)),['AK']),
+  263:['MT','ID','WY','MN','WI','MI','NY','ME','NH','VT','MA','ND','SD','NE','IA','MO','OH','IN','IL','PA','CO','OR','WA'],
+  264:_E,
+  265:u(_CONUS,['AK']),
+  // ── Additional reptiles II ──
+  266:_E,
+  267:u(_E,['TX','OK','KS','NE','IA','MN','SD']),
+  268:['WA','OR','CA','ID','MT','NV','UT','CO','WY','AZ','NM'],
+  269:u(_ATL.filter(s=>['FL','GA','SC','NC','VA'].includes(s)),_GULF),
+  270:u(_ATL.filter(s=>['FL','GA','SC','NC'].includes(s)),_GULF),
+  271:['FL','GA','SC','NC','AL','MS','LA','TX','TN','AR','VA'],
+  272:['FL'],
+  273:u(['CA','AZ','NM','TX','OK','KS','NE','SD','ND','MN','IA','MO','AR','LA','MS','AL','FL','GA','SC','NC','TN','KY','OH','IN','IL','WI','MI','NY','VA','WV','MD','NJ','PA','CO','UT','NV','OR','WA']),
+  // ── Additional amphibians II ──
+  274:['CA'],
+  275:['WA','OR','CA','ID'],
+  276:['CA','OR'],
+  277:['WA','OR','CA','ID','MT'],
+  278:['CA','OR'],
+  // ── Sharks & marine fish ──
+  279:u(_ATL,_GULF,['CA','OR','WA','AK','HI']),
+  280:['CA','OR'],
+  281:u(_ATL,_GULF,['CA']),
+  282:u(_ATL.filter(s=>['FL','NC','SC','GA','MD','VA','NY','NJ'].includes(s)),_GULF,['CA','HI']),
+  283:u(_GULF.filter(s=>['FL','TX'].includes(s)),['GA','SC','NC','CA','HI']),
+  284:u(_ATL.filter(s=>!['ME','NH','VT'].includes(s)),_GULF,['HI','CA']),
+  285:u(_ATL.filter(s=>['FL','GA','SC','NC','VA','MD','DE','NJ'].includes(s)),_GULF,['HI','CA']),
+  286:['CA','OR','WA','AK'],
+  287:u(_ATL,_GULF.filter(s=>['FL','TX'].includes(s))),
+  288:u(_ATL.filter(s=>['FL','GA','SC','NC','VA','MD','DE','NJ','NY'].includes(s)),_GULF),
+  289:['FL'],
+  290:['ME','NH','MA','RI','CT','NY','NJ'],
+  // ── Additional invertebrates II ──
+  291:['CA','OR','WA'],
+  292:['WA','OR','CA','AK'],
+  293:u(_ATL,_GULF,['CA','OR','WA','AK','HI']),
+  294:['ME','NH','MA','RI','CT','NY','NJ','WA','OR','AK'],
+  295:u(_ATL.filter(s=>!['ME','NH'].includes(s)),_GULF),
+  296:['CA','OR','WA','AK'],
+  297:['CA','OR','WA','AK'],
+  298:['CA','OR','WA','AK'],
+  299:['CA'],
+  300:u(_ATL,_GULF,['CA','OR','WA','AK','HI']),
+};
+
+// ── App State ──────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'wilddex_seen_v1';
 let seen = {};  // { animalId: dateString }
 let activeTab = 'all';
 let searchQuery = '';
 let activeFilter = 'all';
+let selectedState = '';
 let modalAnimal = null;
 
 function loadSeen() {
@@ -1012,6 +1388,7 @@ function renderTabs() {
 function getFilteredAnimals() {
   let animals = ANIMALS;
   if (activeTab !== 'all') animals = animals.filter(a => a.cat === activeTab);
+  if (selectedState) animals = animals.filter(a => (ANIMAL_STATES[a.id] || []).includes(selectedState));
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     animals = animals.filter(a => a.name.toLowerCase().includes(q) || a.sci.toLowerCase().includes(q));
@@ -1249,6 +1626,22 @@ function initFilterRow() {
   });
 }
 
+// ── State selector ─────────────────────────────────────────────────────────
+function initStateSelect() {
+  const sel = document.getElementById('state-select');
+  Object.entries(STATE_NAMES).sort((a,b) => a[1].localeCompare(b[1])).forEach(([code, name]) => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => {
+    selectedState = sel.value;
+    renderTabs();
+    renderContent();
+  });
+}
+
 // ── Search ─────────────────────────────────────────────────────────────────
 function initSearch() {
   document.getElementById('search').addEventListener('input', e => {
@@ -1271,6 +1664,7 @@ function initModal() {
 // ── Boot ───────────────────────────────────────────────────────────────────
 loadSeen();
 initFilterRow();
+initStateSelect();
 initSearch();
 initModal();
 updateHeaderProgress();
