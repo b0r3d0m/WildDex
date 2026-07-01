@@ -1096,6 +1096,14 @@ const ANIMALS = [
   { id:411,name:'Axis Deer',                   sci:'Axis axis',                          cat:'mammal', emoji:'🦌', range:'Texas Hill Country; Hawaii', desc:'Native to India and introduced to Texas in the 1930s, the axis deer is now one of the most abundant exotic ungulates in the US with over 125,000 individuals in the Hill Country alone. Its year-round spotted coat makes it arguably the most beautiful deer in the world.' },
   { id:412,name:'Sika Deer',                   sci:'Cervus nippon',                      cat:'mammal', emoji:'🦌', range:'Maryland (Assateague Island), Virginia, Texas', desc:'An Asian deer with a spotted summer coat and distinctive high-pitched bark. The herd on Maryland\'s Assateague Island has been established since the 1920s and is now so large it is managed like a native species, coexisting with the famous Assateague wild ponies.' },
   { id:413,name:'Fallow Deer',                 sci:'Dama dama',                          cat:'mammal', emoji:'🦌', range:'Scattered feral populations, primarily Texas', desc:'A European deer with palmate antlers (flat and shovel-shaped like a moose) and a vivid spotted coat. Introduced widely across Texas ranches for hunting and has established feral populations. The most variable coat color of any deer—ranging from white to nearly black.' },
+
+  // ── WHALES & CETACEANS ──
+  { id:414,name:'Blue Whale',              sci:'Balaenoptera musculus',       cat:'mammal', emoji:'🐳', range:'Pacific & Atlantic offshore waters', desc:'The largest animal ever known to have existed on Earth—up to 100 feet long and 200 tons. Its heart is the size of a small car and its call, at up to 188 decibels, is the loudest sound produced by any animal. Nearly hunted to extinction; the global population is still only a fraction of pre-whaling numbers.' },
+  { id:415,name:'Fin Whale',               sci:'Balaenoptera physalus',       cat:'mammal', emoji:'🐳', range:'Pacific & Atlantic offshore waters', desc:'The second-largest animal on Earth, reaching 90 feet. Known as the "greyhound of the sea" for its sustained speed of over 20 mph. Uniquely asymmetrical in coloration—the right lower jaw is white, the left is dark—possibly an adaptation for circling prey.' },
+  { id:416,name:'Minke Whale',             sci:'Balaenoptera acutorostrata',  cat:'mammal', emoji:'🐳', range:'Both US coasts', desc:'The smallest and most common baleen whale in the Northern Hemisphere, and the most frequently seen from shore and on whale-watching trips. Curious and sometimes approaches boats. Was largely overlooked by whalers until larger species were depleted.' },
+  { id:417,name:'North Atlantic Right Whale',sci:'Eubalaena glacialis',       cat:'mammal', emoji:'🐳', range:'Atlantic coast', desc:'One of the most critically endangered large animals on Earth—fewer than 360 remain. Historically called the "right" whale because it was the right one to hunt: slow, floated when dead, and yielded enormous amounts of oil. Ship strikes and fishing gear entanglement are now the primary killers.' },
+  { id:418,name:'Bowhead Whale',           sci:'Balaena mysticetus',          cat:'mammal', emoji:'🐳', range:'Arctic Alaska', desc:'Lives entirely in Arctic and subarctic waters and is among the longest-lived mammals on Earth—individuals have been found with 19th-century harpoon points embedded in their blubber, suggesting lifespans exceeding 200 years.' },
+  { id:419,name:'Sperm Whale',             sci:'Physeter macrocephalus',      cat:'mammal', emoji:'🐳', range:'Deep offshore US waters', desc:'The largest toothed predator on Earth, diving over 7,000 feet to hunt giant squid in total darkness. Its massive square head contains up to 500 gallons of spermaceti oil. The clicks it uses for echolocation are the loudest sounds produced by any animal.' },
 ];
 
 // ── State regions ─────────────────────────────────────────────────────────
@@ -1562,6 +1570,13 @@ const ANIMAL_STATES = {
   411:['TX','HI'],
   412:['MD','VA','TX'],
   413:['TX'],
+  // ── Whales ──
+  414:u(_ATL,['CA','OR','WA','AK','HI']),
+  415:u(_ATL,['CA','OR','WA','AK','HI']),
+  416:u(_ATL,['CA','OR','WA','AK']),
+  417:_ATL,
+  418:['AK'],
+  419:u(_ATL,['CA','OR','WA','AK','HI']),
 };
 
 // ── App State ──────────────────────────────────────────────────────────────
