@@ -1077,6 +1077,25 @@ const ANIMALS = [
   { id:398,name:'Northern Quahog (Hard Clam)',sci:'Mercenaria mercenaria',   cat:'insect',    emoji:'🐚', range:'Atlantic coast', desc:'The clam of New England clam chowder and the raw bar. Its purple-edged shells were carved by Indigenous peoples into wampum beads used as currency and for ceremonial belts. Grows extremely slowly—large individuals may be 40 years old.' },
   { id:399,name:'Zebra Mussel',           sci:'Dreissena polymorpha',        cat:'insect',    emoji:'🐚', range:'Great Lakes & Mississippi basin (invasive)', desc:'An invasive mussel from Eastern Europe that arrived in ballast water in 1988 and has colonized thousands of miles of US waterways. A single mussel filters a liter of water daily—so thoroughly it starves native fish of plankton.' },
   { id:400,name:'Sea Lamprey',            sci:'Petromyzon marinus',          cat:'fish',      emoji:'🐟', range:'Great Lakes, Atlantic coast rivers', desc:'A jawless parasite with a circular mouth lined with rows of teeth that latches onto fish and rasps through scales to feed on blood and body fluids. Native to the Atlantic, it devastated Great Lakes fisheries after invading through the Erie Canal.' },
+
+  // ── DEER — Mule Deer subspecies ──
+  { id:401,name:'Rocky Mountain Mule Deer',    sci:'Odocoileus hemionus hemionus',       cat:'mammal', emoji:'🦌', range:'Rocky Mountains, Great Basin, Great Plains', desc:'The most widespread mule deer subspecies, named for its large mule-like ears. Bucks grow forked (dichotomous) antlers that branch equally, unlike the tined rack of white-tailed deer. Famous for its stiff-legged bounding gait called "stotting" when fleeing predators.' },
+  { id:402,name:'Black-tailed Deer',           sci:'Odocoileus hemionus columbianus',    cat:'mammal', emoji:'🦌', range:'Pacific coast from California to British Columbia', desc:'A subspecies of mule deer adapted to the dense coastal forests of the Pacific Northwest. Distinguished by a tail that is entirely black or brown on top rather than white-sided. More secretive and solitary than its inland relatives.' },
+  { id:403,name:'Sitka Black-tailed Deer',     sci:'Odocoileus hemionus sitkensis',      cat:'mammal', emoji:'🦌', range:'Southeast Alaska, Pacific Northwest coast', desc:'The smallest mule deer subspecies, stocky and dark-colored for life in the dense rainforests of coastal Alaska and British Columbia. An incredibly important food source for Indigenous peoples of the Pacific Northwest coast.' },
+  { id:404,name:'California Mule Deer',        sci:'Odocoileus hemionus californicus',   cat:'mammal', emoji:'🦌', range:'Central and coastal California', desc:'Found throughout the foothills and mountains of central California. Makes altitudinal migrations—moving to higher elevations in summer and returning to lower foothills in winter—following the green-up of grasses and forbs.' },
+  { id:405,name:'Inyo Mule Deer',              sci:'Odocoileus hemionus inyoensis',      cat:'mammal', emoji:'🦌', range:'Eastern Sierra Nevada, Inyo and Mono Counties, CA', desc:'A subspecies restricted to the arid Great Basin slopes of California\'s eastern Sierra Nevada. Undertakes one of the longest mule deer migrations in the US, traveling up to 150 miles between Inyo County winter range and high Sierra summer range.' },
+  { id:406,name:'Southern Mule Deer',          sci:'Odocoileus hemionus fuliginatus',    cat:'mammal', emoji:'🦌', range:'Southern California, Baja California', desc:'Occupies the chaparral and coastal sage scrub of southern California. Smaller and darker than Rocky Mountain mule deer, well adapted to the hot, dry summers of Southern California\'s shrublands.' },
+  { id:407,name:'Desert Mule Deer',            sci:'Odocoileus hemionus crooki',         cat:'mammal', emoji:'🦌', range:'Chihuahuan Desert — southwestern Texas, New Mexico, Arizona', desc:'A pale, long-legged subspecies adapted to the scorching Chihuahuan Desert. Forages at dawn and dusk to avoid peak heat and can go extended periods without free water, obtaining moisture from succulent plants like prickly pear cactus.' },
+
+  // ── DEER — White-tailed Deer subspecies ──
+  { id:408,name:'Key Deer',                    sci:'Odocoileus virginianus clavium',     cat:'mammal', emoji:'🦌', range:'Florida Keys only', desc:'The world\'s smallest white-tailed deer—a full-grown buck stands only 32 inches at the shoulder. Endangered and found only in the lower Florida Keys, where roughly 1,000 individuals survive. Swims freely between islands and has adapted to brackish water sources.' },
+  { id:409,name:'Coues White-tailed Deer',     sci:'Odocoileus virginianus couesi',      cat:'mammal', emoji:'🦌', range:'Sky islands of Arizona, New Mexico, and west Texas', desc:'A small, pale subspecies of the desert Southwest, known to trophy hunters as the "Arizona Gray Ghost" for its habit of vanishing silently into rocky terrain. Hunted in the same mountain sky islands as the elegant trogon and coati.' },
+  { id:410,name:'Columbia White-tailed Deer',  sci:'Odocoileus virginianus leucurus',    cat:'mammal', emoji:'🦌', range:'Lower Columbia River, Washington & Oregon', desc:'One of the rarest deer subspecies in North America, listed as endangered. A small, isolated population survives near the Columbia River estuary after decades of habitat loss. Conservation efforts have stabilized but not fully recovered the population.' },
+
+  // ── DEER — Introduced species ──
+  { id:411,name:'Axis Deer',                   sci:'Axis axis',                          cat:'mammal', emoji:'🦌', range:'Texas Hill Country; Hawaii', desc:'Native to India and introduced to Texas in the 1930s, the axis deer is now one of the most abundant exotic ungulates in the US with over 125,000 individuals in the Hill Country alone. Its year-round spotted coat makes it arguably the most beautiful deer in the world.' },
+  { id:412,name:'Sika Deer',                   sci:'Cervus nippon',                      cat:'mammal', emoji:'🦌', range:'Maryland (Assateague Island), Virginia, Texas', desc:'An Asian deer with a spotted summer coat and distinctive high-pitched bark. The herd on Maryland\'s Assateague Island has been established since the 1920s and is now so large it is managed like a native species, coexisting with the famous Assateague wild ponies.' },
+  { id:413,name:'Fallow Deer',                 sci:'Dama dama',                          cat:'mammal', emoji:'🦌', range:'Scattered feral populations, primarily Texas', desc:'A European deer with palmate antlers (flat and shovel-shaped like a moose) and a vivid spotted coat. Introduced widely across Texas ranches for hunting and has established feral populations. The most variable coat color of any deer—ranging from white to nearly black.' },
 ];
 
 // ── State regions ─────────────────────────────────────────────────────────
@@ -1529,6 +1548,20 @@ const ANIMAL_STATES = {
   398:_ATL,
   399:['MN','WI','MI','OH','IN','IL','PA','NY','IA','MO','KS','NE','SD','ND','OK','AR','LA','TN','KY','WV','VA','MD','DE','NJ','CT','RI','MA'],
   400:u(['MN','WI','MI','OH','IN','IL','PA','NY','IA','MO','KS','NE','SD','ND'],_ATL),
+  // ── Deer ──
+  401:['MT','ID','WY','CO','UT','NV','AZ','NM','ND','SD','NE','KS','OK','TX','OR','WA','CA'],
+  402:['CA','OR','WA'],
+  403:['WA','OR','AK'],
+  404:['CA'],
+  405:['CA'],
+  406:['CA'],
+  407:['TX','NM','AZ'],
+  408:['FL'],
+  409:['AZ','NM','TX'],
+  410:['WA','OR'],
+  411:['TX','HI'],
+  412:['MD','VA','TX'],
+  413:['TX'],
 };
 
 // ── App State ──────────────────────────────────────────────────────────────
