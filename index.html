@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WildDex — American Wildlife Tracker</title>
+<style>
+  :root {
+    --bg: #0f1a0f;
+    --surface: #162116;
+    --surface2: #1e2e1e;
+    --border: #2a3d2a;
+    --accent: #4caf50;
+    --accent2: #81c784;
+    --accent-glow: rgba(76,175,80,0.35);
+    --text: #e8f5e9;
+    --text-muted: #7a9a7a;
+    --seen-bg: #1a2e1a;
+    --seen-border: #4caf50;
+    --unseen-bg: #111811;
+    --unseen-border: #2a3d2a;
+    --gold: #ffd54f;
+    --card-w: 130px;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #0d1a0d 0%, #162116 60%, #1a2a10 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon { font-size: 2rem; }
+  .logo-text { line-height: 1.1; }
+  .logo-text h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; color: var(--accent2); }
+  .logo-text p { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .overall-progress {
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+  }
+  .progress-label strong { color: var(--accent2); }
+  .progress-track {
+    background: var(--surface2);
+    border-radius: 99px;
+    height: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    box-shadow: 0 0 8px var(--accent-glow);
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .search-input {
+    flex: 1;
+    min-width: 180px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0f1a0f;
+    font-weight: 700;
+  }
+  .tab .count {
+    background: rgba(0,0,0,0.25);
+    border-radius: 99px;
+    padding: 1px 6px;
+    font-size: 0.72rem;
+  }
+  .tab.active .count { background: rgba(0,0,0,0.2); }
+
+  /* ── Filter row ── */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    background: var(--surface);
+  }
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active {
+    border-color: var(--accent);
+    color: var(--accent2);
+    background: rgba(76,175,80,0.1);
+  }
+  .result-count { margin-left: auto; font-size: 0.8rem; color: var(--text-muted); }
+
+  /* ── Grid ── */
+  main {
+    padding: 20px 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Category section ── */
+  .category-section { margin-bottom: 32px; }
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .category-icon { font-size: 1.3rem; }
+  .category-name { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+  .category-progress-text { font-size: 0.82rem; color: var(--text-muted); margin-left: auto; }
+  .category-progress-mini {
+    width: 80px;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .category-progress-mini-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.5s;
+  }
+
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    width: var(--card-w);
+    background: var(--unseen-bg);
+    border: 1.5px solid var(--unseen-border);
+    border-radius: var(--radius);
+    padding: 14px 10px 12px;
+    cursor: pointer;
+    transition: transform 0.18s, border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    user-select: none;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  .card:active { transform: translateY(0) scale(0.97); }
+
+  .card.seen {
+    background: var(--seen-bg);
+    border-color: var(--seen-border);
+    box-shadow: 0 0 12px rgba(76,175,80,0.15);
+  }
+
+  .card-number {
+    position: absolute;
+    top: 7px;
+    left: 9px;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-family: monospace;
+  }
+
+  .card-emoji {
+    font-size: 2.4rem;
+    line-height: 1;
+    filter: grayscale(1) brightness(0.25);
+    transition: filter 0.4s cubic-bezier(.4,0,.2,1);
+    display: block;
+  }
+  .card.seen .card-emoji {
+    filter: none;
+  }
+
+  .card-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.25;
+    color: var(--text-muted);
+    max-width: 100%;
+    word-break: break-word;
+  }
+  .card.seen .card-name { color: var(--text); }
+
+  .card-check {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.85rem;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.3s cubic-bezier(.17,.67,.35,1.3);
+  }
+  .card.seen .card-check { opacity: 1; transform: scale(1); }
+
+  .card-category-dot {
+    position: absolute;
+    bottom: 8px;
+    right: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+
+  /* Pop animation on reveal */
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.12); }
+    70%  { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+  .card.reveal-anim { animation: pop 0.4s cubic-bezier(.4,0,.2,1); }
+
+  /* Seen date tooltip */
+  .card-date {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+    text-align: center;
+  }
+  .card:not(.seen) .card-date { display: none; }
+
+  /* ── Empty state ── */
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+  /* ── Stats panel ── */
+  .stats-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .stats-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-icon { font-size: 1.4rem; }
+  .stat-label { font-size: 0.72rem; color: var(--text-muted); margin: 4px 0 2px; }
+  .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+  .stat-sub { font-size: 0.68rem; color: var(--text-muted); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--seen-border);
+    color: #0f1a0f;
+    border-radius: 99px;
+    padding: 10px 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    z-index: 999;
+    transition: transform 0.35s cubic-bezier(.17,.67,.35,1.2);
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.unseen-toast {
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.25s cubic-bezier(.17,.67,.35,1.2);
+    position: relative;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-emoji { font-size: 5rem; display: block; margin-bottom: 8px; }
+  .modal-number { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
+  .modal-name { font-size: 1.5rem; font-weight: 800; margin: 8px 0 4px; color: var(--accent2); }
+  .modal-sci { font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-bottom: 12px; }
+  .modal-category { display: inline-block; background: rgba(76,175,80,0.15); border: 1px solid var(--accent); color: var(--accent2); border-radius: 99px; padding: 3px 12px; font-size: 0.78rem; margin-bottom: 16px; }
+  .modal-desc { font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+  .modal-range { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 20px; }
+  .modal-range strong { color: var(--text); }
+  .modal-btn {
+    background: var(--accent);
+    color: #0f1a0f;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    width: 100%;
+  }
+  .modal-btn:hover { background: var(--accent2); }
+  .modal-btn:active { transform: scale(0.98); }
+  .modal-btn.unseen-btn { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  .modal-btn.unseen-btn:hover { border-color: var(--accent); color: var(--text); }
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 4px;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-seen-date { font-size: 0.78rem; color: var(--accent2); margin-bottom: 12px; }
+
+  .modal-photo-wrap {
+    width: 100%;
+    height: 200px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .modal-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+  .modal-photo.loaded { display: block; }
+  .modal-photo-placeholder {
+    font-size: 3.5rem;
+    filter: grayscale(1) brightness(0.3);
+  }
+  .modal-photo-wrap.has-photo .modal-photo-placeholder { display: none; }
+  .modal-photo-credit {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.55);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.6rem;
+    padding: 3px 7px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: none;
+  }
+  .modal-photo-wrap.has-photo .modal-photo-credit { display: block; }
+  .modal-photo-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 22px; height: 22px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    :root { --card-w: 110px; }
+    header { padding: 14px 16px 12px; }
+    main { padding: 14px 16px; }
+    .filter-row { padding: 10px 16px; }
+    .logo-text h1 { font-size: 1.3rem; }
+  }
+  @media (max-width: 400px) {
+    :root { --card-w: 96px; }
+    .card-emoji { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      <span class="logo-icon">🌿</span>
+      <div class="logo-text">
+        <h1>WildDex</h1>
+        <p>American Wildlife Tracker</p>
+      </div>
+    </div>
+    <div class="overall-progress">
+      <div class="progress-label">
+        <span>Overall Progress</span>
+        <strong id="overall-count">0 / 0</strong>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="overall-fill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+  <div class="search-bar" style="margin-top:12px;">
+    <input class="search-input" type="text" id="search" placeholder="Search by name…" autocomplete="off">
+    <div class="tabs" id="tabs"></div>
+  </div>
+</header>
+
+<div class="filter-row">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="unseen">Not Yet Seen</button>
+  <button class="filter-btn" data-filter="seen">Seen ✓</button>
+  <span class="result-count" id="result-count"></span>
+</div>
+
+<main>
+  <div class="stats-panel" id="stats-panel"></div>
+  <div id="content"></div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-photo-wrap" id="m-photo-wrap">
+      <div class="modal-photo-loading" id="m-photo-loading"><div class="spinner"></div></div>
+      <span class="modal-photo-placeholder" id="m-photo-placeholder"></span>
+      <img class="modal-photo" id="m-photo" alt="">
+      <div class="modal-photo-credit" id="m-photo-credit"></div>
+    </div>
+    <div class="modal-number" id="m-number"></div>
+    <div class="modal-name" id="m-name"></div>
+    <div class="modal-sci" id="m-sci"></div>
+    <span class="modal-category" id="m-cat"></span>
+    <div class="modal-desc" id="m-desc"></div>
+    <div class="modal-range"><strong>Range:</strong> <span id="m-range"></span></div>
+    <div class="modal-seen-date" id="m-date"></div>
+    <button class="modal-btn" id="modal-action"></button>
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────
+const CATEGORIES = [
+  { id: 'mammal',    label: 'Mammals',    icon: '🦌', color: '#8d6e63' },
+  { id: 'bird',      label: 'Birds',      icon: '🦅', color: '#42a5f5' },
+  { id: 'reptile',   label: 'Reptiles',   icon: '🐍', color: '#66bb6a' },
+  { id: 'amphibian', label: 'Amphibians', icon: '🐸', color: '#26c6da' },
+  { id: 'fish',      label: 'Fish',       icon: '🐟', color: '#5c6bc0' },
+  { id: 'insect',    label: 'Invertebrates', icon: '🦋', color: '#ffca28' },
+];
+
+const ANIMALS = [
+  // ── MAMMALS ──
+  { id:1,  name:'White-tailed Deer',    sci:'Odocoileus virginianus',      cat:'mammal',    emoji:'🦌', range:'Most of US', desc:'The most widespread large wild mammal in North America. Recognized by its distinctive white tail raised as an alarm signal.' },
+  { id:2,  name:'American Black Bear',  sci:'Ursus americanus',            cat:'mammal',    emoji:'🐻', range:'Forests across US', desc:'North America\'s most common bear species. Despite the name, coats range from jet black to cinnamon brown.' },
+  { id:3,  name:'Coyote',              sci:'Canis latrans',               cat:'mammal',    emoji:'🐺', range:'All of US', desc:'Highly adaptable canid that has expanded its range across the entire continent, including urban areas.' },
+  { id:4,  name:'Red Fox',             sci:'Vulpes vulpes',               cat:'mammal',    emoji:'🦊', range:'Most of US', desc:'Clever and adaptable, the red fox is known for its bushy tail and striking orange-red fur.' },
+  { id:5,  name:'North American Beaver',sci:'Castor canadensis',           cat:'mammal',    emoji:'🦫', range:'Most of US', desc:'The largest rodent in North America and a master ecosystem engineer, building elaborate dams and lodges.' },
+  { id:6,  name:'North American River Otter',sci:'Lontra canadensis',      cat:'mammal',    emoji:'🦦', range:'Waterways across US', desc:'Playful and agile in water, river otters are a sign of healthy aquatic ecosystems.' },
+  { id:7,  name:'Moose',               sci:'Alces alces',                 cat:'mammal',    emoji:'🫎', range:'Northern US, Rockies', desc:'The largest member of the deer family, unmistakable for its towering stature and broad palmate antlers.' },
+  { id:8,  name:'American Bison',      sci:'Bison bison',                 cat:'mammal',    emoji:'🦬', range:'Great Plains, parks', desc:'Once nearly extinct, bison herds now roam protected grasslands. The national mammal of the United States.' },
+  { id:9,  name:'Raccoon',             sci:'Procyon lotor',               cat:'mammal',    emoji:'🦝', range:'All of US', desc:'Highly intelligent and dexterous, raccoons are recognized by their black facial mask and ringed tail.' },
+  { id:10, name:'Striped Skunk',       sci:'Mephitis mephitis',           cat:'mammal',    emoji:'🦨', range:'All of US', desc:'Famous for its potent sulfur-compound spray, the striped skunk is one of the most recognizable mammals in North America.' },
+  { id:11, name:'Virginia Opossum',    sci:'Didelphis virginiana',        cat:'mammal',    emoji:'🐀', range:'Eastern & central US', desc:'North America\'s only marsupial. Plays dead ("playing possum") when threatened and has remarkable resistance to snake venom.' },
+  { id:12, name:'Nine-banded Armadillo',sci:'Dasypus novemcinctus',       cat:'mammal',    emoji:'🐾', range:'Southern US', desc:'The only armadillo species in the US. Its bony shell provides protection, and it can hold its breath for up to 6 minutes.' },
+  { id:13, name:'Pronghorn',           sci:'Antilocapra americana',       cat:'mammal',    emoji:'🐐', range:'Western grasslands', desc:'The fastest land animal in the Western Hemisphere, capable of sustaining speeds over 55 mph across open plains.' },
+  { id:14, name:'Elk (Wapiti)',         sci:'Cervus canadensis',           cat:'mammal',    emoji:'🦌', range:'Western US, Rockies', desc:'One of the largest deer species. Male elk produce a haunting bugle call during the autumn rut that echoes through mountain valleys.' },
+  { id:15, name:'Gray Wolf',           sci:'Canis lupus',                 cat:'mammal',    emoji:'🐺', range:'Northern Rockies, Great Lakes', desc:'Apex predator whose reintroduction to Yellowstone famously triggered a trophic cascade that reshaped the ecosystem.' },
+  { id:16, name:'Bobcat',              sci:'Lynx rufus',                  cat:'mammal',    emoji:'🐱', range:'Most of US', desc:'The most common wild cat in North America, identified by its short "bobbed" tail and spotted coat.' },
+  { id:17, name:'Mountain Lion',       sci:'Puma concolor',               cat:'mammal',    emoji:'🐆', range:'Western US, Florida', desc:'Also called cougar or puma, this solitary ambush predator holds the record for the most common names of any animal.' },
+  { id:18, name:'Canada Lynx',         sci:'Lynx canadensis',             cat:'mammal',    emoji:'🐱', range:'Northern US forests', desc:'Built for deep snow with large padded paws, the Canada lynx specializes in hunting snowshoe hares.' },
+  { id:19, name:'Fisher',              sci:'Pekania pennanti',            cat:'mammal',    emoji:'🦡', range:'Northern forests', desc:'One of the few predators that successfully hunts porcupines, attacking the quill-free face with rapid strikes.' },
+  { id:20, name:'American Marten',     sci:'Martes americana',            cat:'mammal',    emoji:'🦡', range:'Northern forests', desc:'An agile tree-climbing mustelid of boreal forests, with luxuriously soft fur that made it historically valuable in the fur trade.' },
+  { id:21, name:'American Badger',     sci:'Taxidea taxus',               cat:'mammal',    emoji:'🦡', range:'Western & central US', desc:'A powerful digger capable of excavating a den faster than a person can dig with a shovel. Known for hunting prairie dogs.' },
+  { id:22, name:'North American Porcupine',sci:'Erethizon dorsatum',      cat:'mammal',    emoji:'🦔', range:'Forests across US', desc:'Covered in roughly 30,000 quills, the porcupine is North America\'s second-largest rodent and an expert tree climber.' },
+  { id:23, name:'American Mink',       sci:'Neovison vison',              cat:'mammal',    emoji:'🦦', range:'Wetlands across US', desc:'Sleek and semi-aquatic, the American mink is an aggressive predator of fish, frogs, and small mammals along waterways.' },
+  { id:24, name:'Muskrat',             sci:'Ondatra zibethicus',          cat:'mammal',    emoji:'🐭', range:'Wetlands across US', desc:'A semi-aquatic rodent that builds dome-shaped lodges from vegetation in marshes and ponds, similar to a miniature beaver.' },
+  { id:25, name:'Eastern Cottontail',  sci:'Sylvilagus floridanus',       cat:'mammal',    emoji:'🐰', range:'Eastern & central US', desc:'The most familiar rabbit in North America, named for its distinctive white cotton-ball tail.' },
+  { id:26, name:'Snowshoe Hare',       sci:'Lepus americanus',            cat:'mammal',    emoji:'🐰', range:'Northern US', desc:'Famous for its seasonal color change from brown in summer to white in winter, camouflaging perfectly in snow.' },
+  { id:27, name:'Black-tailed Jackrabbit',sci:'Lepus californicus',       cat:'mammal',    emoji:'🐰', range:'Western US', desc:'Enormous ears act as radiators to dissipate heat in desert environments. Can leap 20 feet in a single bound.' },
+  { id:28, name:'American Pika',       sci:'Ochotona princeps',           cat:'mammal',    emoji:'🐹', range:'Rocky Mountain talus fields', desc:'A small relative of rabbits that lives in rocky alpine slopes. Sensitive to heat, it is considered a climate change indicator species.' },
+  { id:29, name:'Bighorn Sheep',       sci:'Ovis canadensis',             cat:'mammal',    emoji:'🐑', range:'Western mountains', desc:'Males engage in dramatic head-butting contests, charging at each other at up to 20 mph, with impacts audible from miles away.' },
+  { id:30, name:'Mountain Goat',       sci:'Oreamnos americanus',         cat:'mammal',    emoji:'🐐', range:'Rocky Mountains', desc:'Perfectly adapted for sheer cliff faces with specialized hooves featuring hard outer edges and soft inner pads for traction.' },
+  { id:31, name:'Harbor Seal',         sci:'Phoca vitulina',              cat:'mammal',    emoji:'🦭', range:'Both US coasts', desc:'One of the most common seals on US coastlines, harbor seals are often spotted hauled out on rocks and beaches.' },
+  { id:32, name:'California Sea Lion', sci:'Zalophus californianus',      cat:'mammal',    emoji:'🦭', range:'Pacific coast', desc:'Highly intelligent and trainable, California sea lions are known for their loud barking and acrobatic swimming.' },
+  { id:33, name:'West Indian Manatee', sci:'Trichechus manatus',          cat:'mammal',    emoji:'🐋', range:'Florida, Gulf Coast', desc:'Gentle giants of Florida\'s waterways, manatees use their paddle-shaped flippers and flexible lips to graze on aquatic plants.' },
+  { id:34, name:'Bottlenose Dolphin',  sci:'Tursiops truncatus',          cat:'mammal',    emoji:'🐬', range:'US coastal waters', desc:'Among the most intelligent animals on Earth, bottlenose dolphins use complex vocalizations and live in tight-knit social groups.' },
+  { id:35, name:'Humpback Whale',      sci:'Megaptera novaeangliae',      cat:'mammal',    emoji:'🐳', range:'US ocean waters', desc:'Known for complex songs that can last for hours, humpback whales undertake some of the longest migrations of any mammal.' },
+  { id:36, name:'Mexican Free-tailed Bat',sci:'Tadarida brasiliensis',    cat:'mammal',    emoji:'🦇', range:'Southern US', desc:'Bracken Cave in Texas hosts the world\'s largest bat colony—over 15 million individuals—that emerge each evening in a spectacular cloud.' },
+  { id:37, name:'Eastern Gray Squirrel',sci:'Sciurus carolinensis',       cat:'mammal',    emoji:'🐿️', range:'Eastern US', desc:'A prolific cacher of acorns, the eastern gray squirrel accidentally plants thousands of trees each year by forgetting its buried stores.' },
+  { id:38, name:'Groundhog',           sci:'Marmota monax',               cat:'mammal',    emoji:'🦫', range:'Eastern & central US', desc:'One of the largest ground squirrels, the groundhog (woodchuck) digs extensive burrow systems and hibernates through winter.' },
+  { id:39, name:'Collared Peccary',    sci:'Pecari tajacu',               cat:'mammal',    emoji:'🐗', range:'Southwest US', desc:'Often called javelina, these pig-like animals travel in herds through desert scrub and are identified by the white collar around their neck.' },
+  { id:40, name:'Florida Manatee',     sci:'Trichechus manatus latirostris',cat:'mammal',  emoji:'🐋', range:'Florida', desc:'A subspecies found only in Florida waters, often bearing propeller scars from boat strikes—a reminder of human-wildlife conflicts.' },
+
+  // ── BIRDS ──
+  { id:41, name:'Bald Eagle',          sci:'Haliaeetus leucocephalus',    cat:'bird',      emoji:'🦅', range:'All of US near water', desc:'The national bird and symbol of the United States. Once endangered by DDT, it has made a remarkable comeback thanks to conservation efforts.' },
+  { id:42, name:'Golden Eagle',        sci:'Aquila chrysaetos',           cat:'bird',      emoji:'🦅', range:'Western US', desc:'A powerful predator of open country, the golden eagle can dive at speeds exceeding 150 mph to strike prey with its massive talons.' },
+  { id:43, name:'Osprey',              sci:'Pandion haliaetus',           cat:'bird',      emoji:'🦅', range:'Coasts & waterways', desc:'Uniquely adapted fish hawk that dives feet-first into water. Reversible outer toe allows it to hold slippery fish with two toes on each side.' },
+  { id:44, name:'Red-tailed Hawk',     sci:'Buteo jamaicensis',           cat:'bird',      emoji:'🦅', range:'All of US', desc:'The most common hawk in North America. Its distinctive screech is the default "eagle cry" used in countless movies and TV shows.' },
+  { id:45, name:'Peregrine Falcon',    sci:'Falco peregrinus',            cat:'bird',      emoji:'🦅', range:'All of US', desc:'The fastest animal on Earth, reaching over 240 mph in a hunting stoop. Has thrived in cities by nesting on skyscrapers and hunting pigeons.' },
+  { id:46, name:'Great Horned Owl',    sci:'Bubo virginianus',            cat:'bird',      emoji:'🦉', range:'All of US', desc:'The largest and most powerful owl in North America, capable of taking prey as large as skunks, geese, and even other raptors.' },
+  { id:47, name:'Snowy Owl',           sci:'Bubo scandiacus',             cat:'bird',      emoji:'🦉', range:'Northern US (winter irruptions)', desc:'The heaviest owl in North America. During periodic "irruption" years, these Arctic owls appear in surprising numbers across the northern US.' },
+  { id:48, name:'Barred Owl',          sci:'Strix varia',                 cat:'bird',      emoji:'🦉', range:'Eastern US', desc:'Its classic call, "Who cooks for you? Who cooks for you all?" is a quintessential sound of eastern forests and swamps.' },
+  { id:49, name:'American Robin',      sci:'Turdus migratorius',          cat:'bird',      emoji:'🐦', range:'All of US', desc:'A beloved herald of spring, the robin is actually a thrush—not a true robin—and one of the most familiar songbirds in North America.' },
+  { id:50, name:'Northern Cardinal',   sci:'Cardinalis cardinalis',       cat:'bird',      emoji:'🐦', range:'Eastern & central US', desc:'The brilliant red male cardinal is one of the most recognizable birds in North America and the official state bird of seven states.' },
+  { id:51, name:'Blue Jay',            sci:'Cyanocitta cristata',         cat:'bird',      emoji:'🐦', range:'Eastern US', desc:'Intelligent and bold, blue jays are known for their striking plumage, loud calls, and tendency to mimic the calls of hawks.' },
+  { id:52, name:'American Crow',       sci:'Corvus brachyrhynchos',       cat:'bird',      emoji:'🐦‍⬛', range:'All of US', desc:'Among the most intelligent birds in the world. Crows recognize individual human faces, use tools, and hold "funerals" for their dead.' },
+  { id:53, name:'Common Raven',        sci:'Corvus corax',                cat:'bird',      emoji:'🐦‍⬛', range:'Western & northern US', desc:'The largest perching bird in North America. Ravens have been observed sliding down snow-covered rooftops apparently just for fun.' },
+  { id:54, name:'Canada Goose',        sci:'Branta canadensis',           cat:'bird',      emoji:'🪿', range:'All of US', desc:'Iconic V-shaped migrating formations cross North American skies each autumn. Pairs mate for life and aggressively defend nesting areas.' },
+  { id:55, name:'Mallard',             sci:'Anas platyrhynchos',          cat:'bird',      emoji:'🦆', range:'All of US', desc:'The most abundant and familiar duck in North America, ancestor to almost all domestic duck breeds. The female\'s quack is the classic "duck sound."' },
+  { id:56, name:'Wood Duck',           sci:'Aix sponsa',                  cat:'bird',      emoji:'🦆', range:'Eastern & western US', desc:'Considered by many to be the most beautiful duck in North America. It nests in tree cavities and ducklings leap from nest holes up to 50 feet above ground hours after hatching.' },
+  { id:57, name:'Great Blue Heron',    sci:'Ardea herodias',              cat:'bird',      emoji:'🦢', range:'All of US', desc:'The largest heron in North America, standing nearly 5 feet tall. It stands motionless for long periods waiting to strike fish with spear-like precision.' },
+  { id:58, name:'Great Egret',         sci:'Ardea alba',                  cat:'bird',      emoji:'🦢', range:'US coasts & wetlands', desc:'Populations were decimated for their breeding plumes used in hat fashion. Their recovery became a foundational story of American conservation.' },
+  { id:59, name:'Sandhill Crane',      sci:'Antigone canadensis',         cat:'bird',      emoji:'🦢', range:'Midwest, western US', desc:'Their ancient rattling calls carry for miles across wetlands. The Platte River in Nebraska hosts hundreds of thousands during spring migration.' },
+  { id:60, name:'Wild Turkey',         sci:'Meleagris gallopavo',         cat:'bird',      emoji:'🦃', range:'All of US', desc:'Benjamin Franklin reportedly preferred it as the national bird. Male toms display spectacular iridescent plumage and produce the iconic gobble.' },
+  { id:61, name:'Ruby-throated Hummingbird',sci:'Archilochus colubris',   cat:'bird',      emoji:'🐦', range:'Eastern US (summer)', desc:'The only hummingbird species breeding in eastern North America. Its heart beats over 1,200 times per minute during flight.' },
+  { id:62, name:'Anna\'s Hummingbird', sci:'Calypte anna',                cat:'bird',      emoji:'🐦', range:'Pacific coast', desc:'One of the only hummingbirds that doesn\'t migrate, remaining on the West Coast year-round. Males perform dramatic sky-dive displays.' },
+  { id:63, name:'Pileated Woodpecker', sci:'Dryocopus pileatus',          cat:'bird',      emoji:'🐦', range:'Eastern & Pacific US forests', desc:'The largest woodpecker in North America, the inspiration for Woody Woodpecker. Its powerful chisel-like beak can excavate rectangular cavities in dead trees.' },
+  { id:64, name:'American Kestrel',    sci:'Falco sparverius',            cat:'bird',      emoji:'🐦', range:'All of US', desc:'The smallest and most colorful falcon in North America. It can hover in place and is one of the few raptors that shows sexual dimorphism in plumage.' },
+  { id:65, name:'Belted Kingfisher',   sci:'Megaceryle alcyon',           cat:'bird',      emoji:'🐦', range:'All of US near water', desc:'A stocky, shaggy-crested bird that hunts fish by diving headfirst into water from a perch. The female is actually more colorful than the male—rare in birds.' },
+  { id:66, name:'Cedar Waxwing',       sci:'Bombycilla cedrorum',         cat:'bird',      emoji:'🐦', range:'All of US', desc:'A sleek, crested bird named for waxy red tips on its wing feathers. They pass berries down a line from bird to bird, sharing food communally.' },
+  { id:67, name:'Baltimore Oriole',    sci:'Icterus galbula',             cat:'bird',      emoji:'🐦', range:'Eastern US (summer)', desc:'Blazing orange-and-black males are one of the showiest birds of the eastern US. They weave intricate hanging pouch nests from plant fibers.' },
+  { id:68, name:'Painted Bunting',     sci:'Passerina ciris',             cat:'bird',      emoji:'🐦', range:'Southern US (summer)', desc:'Often called the most beautiful bird in North America, the male\'s plumage of red, blue, and green looks almost too vivid to be real.' },
+  { id:69, name:'Indigo Bunting',      sci:'Passerina cyanea',            cat:'bird',      emoji:'🐦', range:'Eastern US (summer)', desc:'The brilliant blue male navigates by the stars during migration, learning the night sky as a nestling and using it as a compass throughout its life.' },
+  { id:70, name:'Common Loon',         sci:'Gavia immer',                 cat:'bird',      emoji:'🐦', range:'Northern US lakes', desc:'Its haunting, yodeling call is the quintessential sound of northern wilderness. Loons can dive 200 feet deep in pursuit of fish.' },
+  { id:71, name:'Brown Pelican',       sci:'Pelecanus occidentalis',      cat:'bird',      emoji:'🐦', range:'US coasts', desc:'Dives bill-first into the ocean to catch fish in its expandable throat pouch. Nearly extinct due to DDT in the 1970s, now fully recovered.' },
+  { id:72, name:'Roseate Spoonbill',   sci:'Platalea ajaja',              cat:'bird',      emoji:'🦩', range:'Gulf Coast, Florida', desc:'Unmistakable for its brilliant pink plumage and spatula-shaped bill that it sweeps side-to-side through shallow water to catch prey.' },
+  { id:73, name:'Whooping Crane',      sci:'Grus americana',              cat:'bird',      emoji:'🦢', range:'Texas coast (winter)', desc:'North America\'s tallest bird and one of its rarest. After dropping to just 15 wild individuals in 1941, intensive conservation has brought numbers back to over 500.' },
+  { id:74, name:'California Condor',   sci:'Gymnogyps californianus',     cat:'bird',      emoji:'🦅', range:'Southwest US', desc:'North America\'s largest bird with a 9.5-foot wingspan. Extinct in the wild in 1987 with just 27 alive, conservation has rebuilt the population to over 500.' },
+  { id:75, name:'American White Pelican',sci:'Pelecanus erythrorhynchos', cat:'bird',      emoji:'🦢', range:'Central US lakes, coasts', desc:'Unlike the brown pelican, it scoops fish from the surface rather than diving, often working cooperatively with other pelicans to herd fish.' },
+  { id:76, name:'Tufted Puffin',       sci:'Fratercula cirrhata',         cat:'bird',      emoji:'🐦', range:'Pacific Northwest coast', desc:'Recognized by its dramatic golden head tufts and rainbow-colored bill during breeding season. Spends winters far out at sea.' },
+  { id:77, name:'American Avocet',     sci:'Recurvirostra americana',     cat:'bird',      emoji:'🐦', range:'Western US wetlands', desc:'Feeds by sweeping its strongly upturned bill from side to side through shallow water. Breeding adults develop a gorgeous rust-orange head and neck.' },
+  { id:78, name:'Black Oystercatcher', sci:'Haematopus bachmani',         cat:'bird',      emoji:'🐦', range:'Pacific coast rocky shores', desc:'Uses its distinctive red chisel-like bill to pry open mussels and oysters from rocky shores along the Pacific coast.' },
+  { id:79, name:'American Woodcock',   sci:'Scolopax minor',              cat:'bird',      emoji:'🐦', range:'Eastern US', desc:'A plump shorebird of moist woodlands that performs an elaborate spiral sky dance at dusk. Its eyes are positioned so far back it has 360-degree vision.' },
+  { id:80, name:'Scissor-tailed Flycatcher',sci:'Tyrannus forficatus',    cat:'bird',      emoji:'🐦', range:'Southern Great Plains', desc:'Named for its extraordinarily long forked tail, which can exceed the body length. The state bird of Oklahoma.' },
+
+  // ── REPTILES ──
+  { id:81, name:'American Alligator', sci:'Alligator mississippiensis',   cat:'reptile',   emoji:'🐊', range:'Southeast US', desc:'A living fossil unchanged for millions of years. Once nearly extinct, alligators have recovered to over 5 million in the wild—a landmark conservation success.' },
+  { id:82, name:'American Crocodile', sci:'Crocodylus acutus',            cat:'reptile',   emoji:'🐊', range:'South Florida', desc:'One of the only places in the world where crocodilians and alligators coexist. The American crocodile prefers saltwater and is much rarer than its cousin.' },
+  { id:83, name:'Eastern Box Turtle', sci:'Terrapene carolina',           cat:'reptile',   emoji:'🐢', range:'Eastern US', desc:'One of the few turtles that can fully close its hinged shell. A single individual may live in the same small territory for over 100 years.' },
+  { id:84, name:'Painted Turtle',     sci:'Chrysemys picta',              cat:'reptile',   emoji:'🐢', range:'Most of US', desc:'The most widespread native turtle in North America, recognized by the red and yellow markings on its shell edges and skin.' },
+  { id:85, name:'Snapping Turtle',    sci:'Chelydra serpentina',          cat:'reptile',   emoji:'🐢', range:'Eastern & central US', desc:'The largest freshwater turtle in much of its range. Its powerful hooked jaw can exert tremendous force, but it is not aggressive when left alone in water.' },
+  { id:86, name:'Desert Tortoise',    sci:'Gopherus agassizii',           cat:'reptile',   emoji:'🐢', range:'Mojave & Sonoran Deserts', desc:'Can survive without drinking water for up to a year, obtaining moisture from plants. Spends up to 95% of its life underground to avoid temperature extremes.' },
+  { id:87, name:'Leatherback Sea Turtle',sci:'Dermochelys coriacea',      cat:'reptile',   emoji:'🐢', range:'US ocean waters', desc:'The largest turtle on Earth, reaching 2,000 lbs. Unlike other sea turtles, it lacks a hard shell, instead having a flexible leathery carapace.' },
+  { id:88, name:'Loggerhead Sea Turtle',sci:'Caretta caretta',            cat:'reptile',   emoji:'🐢', range:'Atlantic & Gulf coasts', desc:'Named for its massive head, which houses powerful jaw muscles for crushing hard-shelled prey like horseshoe crabs.' },
+  { id:89, name:'Western Diamondback Rattlesnake',sci:'Crotalus atrox',   cat:'reptile',   emoji:'🐍', range:'Southwest US', desc:'Responsible for the most snakebite fatalities in the US. Its rattle is made of modified keratin segments added each time the snake sheds its skin.' },
+  { id:90, name:'Eastern Timber Rattlesnake',sci:'Crotalus horridus',     cat:'reptile',   emoji:'🐍', range:'Eastern US', desc:'Historically widespread but now rare due to persecution. Females give birth to live young only once every 3-5 years, making populations slow to recover.' },
+  { id:91, name:'Eastern Garter Snake',sci:'Thamnophis sirtalis',         cat:'reptile',   emoji:'🐍', range:'Eastern & central US', desc:'The most common snake in North America. Unlike most snakes, garter snakes give birth to live young and often emerge in large groups from hibernacula in spring.' },
+  { id:92, name:'Corn Snake',          sci:'Pantherophis guttatus',       cat:'reptile',   emoji:'🐍', range:'Southeast US', desc:'Named for the corn-kernel-like pattern on its belly. An expert climber and constrictor that helps control rodent populations around farms and homes.' },
+  { id:93, name:'Eastern Coral Snake',  sci:'Micrurus fulvius',           cat:'reptile',   emoji:'🐍', range:'Southeast US', desc:'"Red touches yellow, kill a fellow"—the red-and-yellow band pattern distinguishes this venomous snake from harmless mimics like the scarlet king snake.' },
+  { id:94, name:'Gila Monster',        sci:'Heloderma suspectum',         cat:'reptile',   emoji:'🦎', range:'Southwest US', desc:'One of only two venomous lizards native to the US. Despite its fearsome reputation, it is slow-moving and spends most of its life underground.' },
+  { id:95, name:'Western Fence Lizard',sci:'Sceloporus occidentalis',     cat:'reptile',   emoji:'🦎', range:'Western US', desc:'The "blue belly" of this lizard has a remarkable property: ticks feeding on it lose the Lyme disease bacteria, making these lizards important for human health.' },
+  { id:96, name:'Texas Horned Lizard', sci:'Phrynosoma cornutum',         cat:'reptile',   emoji:'🦎', range:'South-central US', desc:'Affectionately called "horny toads," these iconic lizards can squirt blood from their eyes up to 5 feet as a defense mechanism against predators.' },
+  { id:97, name:'Green Anole',         sci:'Anolis carolinensis',         cat:'reptile',   emoji:'🦎', range:'Southeast US', desc:'The only anole native to the US, famous for the males\' bright pink dewlap (throat fan) used in territorial displays and courtship.' },
+  { id:98, name:'Collared Lizard',     sci:'Crotaphytus collaris',        cat:'reptile',   emoji:'🦎', range:'Southwest US', desc:'Capable of running on its hind legs like a tiny theropod dinosaur. The vivid green and blue male is considered the most colorful US lizard.' },
+  { id:99, name:'Cottonmouth',         sci:'Agkistrodon piscivorus',      cat:'reptile',   emoji:'🐍', range:'Southeast US', desc:'Also called water moccasin. Named for the white interior of its mouth, displayed as a warning. The only semi-aquatic venomous snake in North America.' },
+  { id:100,name:'Copperhead',          sci:'Agkistrodon contortrix',      cat:'reptile',   emoji:'🐍', range:'Eastern & central US', desc:'Responsible for more venomous snakebites in the US than any other species due to its excellent camouflage and preference for suburban woodlands.' },
+
+  // ── AMPHIBIANS ──
+  { id:101,name:'American Bullfrog',   sci:'Lithobates catesbeianus',     cat:'amphibian', emoji:'🐸', range:'Most of US (native East)', desc:'The largest frog in North America. Its deep bass call carries for miles, and it is so voracious it will eat anything it can fit in its mouth—including other frogs.' },
+  { id:102,name:'Wood Frog',           sci:'Lithobates sylvaticus',       cat:'amphibian', emoji:'🐸', range:'Northern & eastern US', desc:'Survives being completely frozen solid in winter. When temperatures warm, ice crystals melt and the frog resumes normal activity within hours.' },
+  { id:103,name:'Spring Peeper',       sci:'Pseudacris crucifer',         cat:'amphibian', emoji:'🐸', range:'Eastern US', desc:'Despite being barely larger than a quarter, this tiny frog produces the classic "peeping" chorus of spring that heralds the end of winter.' },
+  { id:104,name:'Gray Tree Frog',      sci:'Hyla versicolor',             cat:'amphibian', emoji:'🐸', range:'Eastern US', desc:'Can change color from gray to green to brown to match its bark-covered perch. Like the wood frog, it can survive partial freezing in winter.' },
+  { id:105,name:'American Toad',       sci:'Anaxyrus americanus',         cat:'amphibian', emoji:'🐸', range:'Eastern US', desc:'Produces a long, beautiful trilling song in spring. Despite the myth, handling toads does not cause warts—their bumpy skin is just a frog adaptation, not a disease.' },
+  { id:106,name:'Pacific Tree Frog',   sci:'Pseudacris regilla',          cat:'amphibian', emoji:'🐸', range:'Pacific coast', desc:'The stereotypical "ribbit" sound used in Hollywood movies actually belongs to this species, even when scenes are set nowhere near California.' },
+  { id:107,name:'Tiger Salamander',    sci:'Ambystoma tigrinum',          cat:'amphibian', emoji:'🦎', range:'Most of US', desc:'The world\'s largest land-dwelling salamander. Some populations are neotenic, retaining larval features (including external gills) into adulthood.' },
+  { id:108,name:'Spotted Salamander',  sci:'Ambystoma maculatum',         cat:'amphibian', emoji:'🦎', range:'Eastern US', desc:'Adults are rarely seen, living underground except for a single night in early spring when hundreds converge on vernal pools to breed in a mass spectacle.' },
+  { id:109,name:'Hellbender',          sci:'Cryptobranchus alleganiensis',cat:'amphibian', emoji:'🦎', range:'Eastern US streams', desc:'North America\'s largest salamander, reaching 2.5 feet long. This giant, wrinkled aquatic creature breathes almost entirely through its skin.' },
+  { id:110,name:'Eastern Newt',        sci:'Notophthalmus viridescens',   cat:'amphibian', emoji:'🦎', range:'Eastern US', desc:'Has a fascinating three-stage life cycle. The toxic red eft stage wanders forests for years before returning to water as a green aquatic adult.' },
+  { id:111,name:'Red-backed Salamander',sci:'Plethodon cinereus',         cat:'amphibian', emoji:'🦎', range:'Eastern US', desc:'Lungless and entirely terrestrial, breathing entirely through its moist skin. It is one of the most abundant vertebrates in eastern North American forests.' },
+  { id:112,name:'Mudpuppy',            sci:'Necturus maculosus',          cat:'amphibian', emoji:'🦎', range:'Eastern & central US', desc:'One of the largest aquatic salamanders, retaining bushy red external gills throughout its entire life. Permanently larval, it never metamorphoses.' },
+  { id:113,name:'Pacific Giant Salamander',sci:'Dicamptodon tenebrosus',  cat:'amphibian', emoji:'🦎', range:'Pacific Northwest', desc:'One of the few salamanders known to vocalize, producing a low-pitched bark or rattle when threatened. Can reach 13 inches and prey on mice and small snakes.' },
+  { id:114,name:'Fowler\'s Toad',      sci:'Anaxyrus fowleri',            cat:'amphibian', emoji:'🐸', range:'Eastern US', desc:'Distinguished from the American toad by three or more warts per dark dorsal spot and a shorter, harsher, sheep-like bleat rather than a musical trill.' },
+  { id:115,name:'Great Plains Toad',   sci:'Anaxyrus cognatus',           cat:'amphibian', emoji:'🐸', range:'Central & western US', desc:'An expert burrower that can dig down 3 feet to escape extreme heat and drought. Emerges explosively to breed in flooded grasslands after heavy rains.' },
+
+  // ── FISH ──
+  { id:116,name:'Largemouth Bass',     sci:'Micropterus salmoides',       cat:'fish',      emoji:'🐟', range:'All of US (native & introduced)', desc:'The most popular sport fish in North America. Ambushes prey by opening its enormous mouth rapidly, creating suction that pulls in prey from several inches away.' },
+  { id:117,name:'Rainbow Trout',       sci:'Oncorhynchus mykiss',         cat:'fish',      emoji:'🐟', range:'Western US streams', desc:'Native to the Pacific coast, it has been introduced to cold, clear streams across the US and the world. The steelhead is the ocean-going form of the same species.' },
+  { id:118,name:'Brook Trout',         sci:'Salvelinus fontinalis',       cat:'fish',      emoji:'🐟', range:'Eastern US streams', desc:'Often considered the most beautiful freshwater fish in North America. Its requirement for cold, pristine water makes it an indicator of stream health.' },
+  { id:119,name:'Chinook Salmon',      sci:'Oncorhynchus tshawytscha',    cat:'fish',      emoji:'🐟', range:'Pacific Northwest rivers', desc:'The largest Pacific salmon, also called king salmon. Migrating adults stop eating entirely, living off fat reserves as they travel hundreds of miles upstream to spawn.' },
+  { id:120,name:'Coho Salmon',         sci:'Oncorhynchus kisutch',        cat:'fish',      emoji:'🐟', range:'Pacific Northwest', desc:'After spawning and dying, the carcasses of salmon provide enormous nutrient subsidies to stream and forest ecosystems, feeding bears, eagles, and even trees.' },
+  { id:121,name:'Bluegill',            sci:'Lepomis macrochirus',         cat:'fish',      emoji:'🐟', range:'Eastern & central US', desc:'The most commonly caught freshwater fish in the US, a favorite for young anglers. Males aggressively fan out and guard circular nests on shallow lake bottoms.' },
+  { id:122,name:'Walleye',             sci:'Sander vitreus',              cat:'fish',      emoji:'🐟', range:'Northern & central US', desc:'Named for its large, glassy eyes adapted for hunting in low light. The most popular sport fish in the Midwest and Canada.' },
+  { id:123,name:'Northern Pike',       sci:'Esox lucius',                 cat:'fish',      emoji:'🐟', range:'Northern US', desc:'A fearsome ambush predator with a mouthful of sharp teeth. Pike will eat virtually anything—fish, frogs, ducks, and even muskrats.' },
+  { id:124,name:'Channel Catfish',     sci:'Ictalurus punctatus',         cat:'fish',      emoji:'🐟', range:'Central & eastern US', desc:'With over 100,000 taste receptors on its body (compared to 10,000 on a human tongue), the channel catfish is essentially a swimming taste bud.' },
+  { id:125,name:'Lake Sturgeon',       sci:'Acipenser fulvescens',        cat:'fish',      emoji:'🐟', range:'Great Lakes, large rivers', desc:'A prehistoric giant that can live 150 years. Like sharks, sturgeons have a skeleton of cartilage. Overfishing and dams have made it endangered in many areas.' },
+  { id:126,name:'Paddlefish',          sci:'Polyodon spathula',           cat:'fish',      emoji:'🐟', range:'Mississippi River system', desc:'One of the oldest fish species on Earth, nearly unchanged for 300 million years. It filter-feeds on tiny crustaceans and plankton using its enormous paddle-shaped rostrum.' },
+  { id:127,name:'Alligator Gar',       sci:'Atractosteus spatula',        cat:'fish',      emoji:'🐟', range:'Southeast US rivers', desc:'The largest freshwater fish in North America, reaching 10 feet and 300 lbs. Equipped with double rows of alligator-like teeth and armor-like scales.' },
+  { id:128,name:'Atlantic Striped Bass',sci:'Morone saxatilis',           cat:'fish',      emoji:'🐟', range:'Atlantic coast', desc:'Undertakes epic migrations along the Atlantic seaboard. A hugely important recreational fish, it has rebounded from near-collapse following strict fishing regulations.' },
+  { id:129,name:'Sockeye Salmon',      sci:'Oncorhynchus nerka',          cat:'fish',      emoji:'🐟', range:'Pacific Northwest', desc:'Males turn vivid red with green heads when they return to freshwater to spawn. Kokanee are a landlocked form that never migrate to the sea.' },
+  { id:130,name:'Muskellunge',         sci:'Esox masquinongy',            cat:'fish',      emoji:'🐟', range:'Great Lakes, northern rivers', desc:'The "fish of ten thousand casts"—the holy grail of freshwater fishing. The largest member of the pike family, potentially reaching 6 feet long.' },
+
+  // ── INSECTS & INVERTEBRATES ──
+  { id:131,name:'Monarch Butterfly',   sci:'Danaus plexippus',            cat:'insect',    emoji:'🦋', range:'All of US (migratory)', desc:'Migrates up to 3,000 miles to overwintering sites in Mexico. No single individual completes the round trip—the journey spans 3-4 generations of butterflies.' },
+  { id:132,name:'Eastern Tiger Swallowtail',sci:'Papilio glaucus',        cat:'insect',    emoji:'🦋', range:'Eastern US', desc:'One of the most familiar butterflies in the East, the large yellow-and-black adults are a common sight nectaring at garden flowers in summer.' },
+  { id:133,name:'Luna Moth',           sci:'Actias luna',                 cat:'insect',    emoji:'🦋', range:'Eastern US', desc:'One of the most beautiful insects in North America. Adult luna moths have no mouth—they cannot eat—and live for only about a week, solely to reproduce.' },
+  { id:134,name:'American Bumblebee',  sci:'Bombus pensylvanicus',        cat:'insect',    emoji:'🐝', range:'Eastern & central US', desc:'Once very common, this native bumblebee has declined dramatically due to pesticides, disease, and competition from commercial bee operations.' },
+  { id:135,name:'Firefly (Lightning Bug)',sci:'Photinus pyralis',         cat:'insect',    emoji:'✨', range:'Eastern & central US', desc:'Uses a chemical reaction (bioluminescence) to produce light. Each species has a unique flashing pattern. The light-producing reaction is nearly 100% efficient.' },
+  { id:136,name:'Praying Mantis',      sci:'Tenodera sinensis',           cat:'insect',    emoji:'🦗', range:'All of US', desc:'An ambush predator that can turn its head 180 degrees—the only insect able to look over its shoulder. Can catch small birds, frogs, and lizards.' },
+  { id:137,name:'Painted Lady Butterfly',sci:'Vanessa cardui',           cat:'insect',    emoji:'🦋', range:'All of US', desc:'The most widespread butterfly in the world, found on every continent except Antarctica and South America. A champion migrant that crosses the Sahara desert.' },
+  { id:138,name:'American Horseshoe Crab',sci:'Limulus polyphemus',       cat:'insect',    emoji:'🦀', range:'Atlantic coast', desc:'Not a true crab but more closely related to spiders and scorpions. A living fossil unchanged for 445 million years. Its blue blood is harvested to test medical equipment for bacterial contamination.' },
+  { id:139,name:'American Lobster',    sci:'Homarus americanus',          cat:'insect',    emoji:'🦞', range:'Atlantic coast', desc:'Can live over 100 years and grow indefinitely—they don\'t naturally die of old age. May carry 100,000 eggs at once, releasing them over two summers.' },
+  { id:140,name:'Blue Crab',           sci:'Callinectes sapidus',         cat:'insect',    emoji:'🦀', range:'Atlantic & Gulf coasts', desc:'An iconic species of the Chesapeake Bay and other East Coast estuaries. The scientific name means "beautiful swimmer," referring to its paddle-like rear legs.' },
+  { id:141,name:'Monarch Dragonfly (Common Green Darner)',sci:'Anax junius',cat:'insect',  emoji:'🪲', range:'All of US', desc:'One of the largest dragonflies in North America and the only dragonfly known to migrate like monarch butterflies, traveling thousands of miles each year.' },
+  { id:142,name:'Walking Stick (Northern)',sci:'Diapheromera femorata',   cat:'insect',    emoji:'🪲', range:'Eastern US forests', desc:'The longest insect in North America. Its disguise as a twig is so effective it is nearly invisible against woody vegetation. Can regenerate lost limbs.' },
+  { id:143,name:'Cecropia Moth',       sci:'Hyalophora cecropia',         cat:'insect',    emoji:'🦋', range:'Eastern US', desc:'North America\'s largest native moth with a wingspan up to 7 inches. Like the luna moth, adult cecropias have no mouths and live only to mate.' },
+  { id:144,name:'Dungeness Crab',      sci:'Metacarcinus magister',       cat:'insect',    emoji:'🦀', range:'Pacific coast', desc:'One of the most commercially important seafood species on the Pacific coast. After molting their hard shell, crabs are vulnerable until the new shell hardens.' },
+  { id:145,name:'American Burying Beetle',sci:'Nicrophorus americanus',   cat:'insect',    emoji:'🪲', range:'Scattered small populations', desc:'One of the most critically endangered insects in North America. Pairs work together to bury small animal carcasses for their larvae to feed on—a remarkable feat of parental care for an insect.' },
+
+  // ── MAMMALS (additional) ──
+  { id:146,name:'Feral Burro',            sci:'Equus asinus',                cat:'mammal',    emoji:'🫏', range:'Desert Southwest, Great Basin', desc:'Descendants of pack animals brought by Spanish explorers, feral burros now roam western deserts in the thousands. Highly intelligent and hardy, they compete with native wildlife for water.' },
+  { id:147,name:'White-nosed Coati',      sci:'Nasua narica',                cat:'mammal',    emoji:'🦡', range:'Arizona, New Mexico, Texas', desc:'A racoon relative with a distinctive long flexible snout and ringed tail held upright. Females and young travel in noisy bands while males are solitary.' },
+  { id:148,name:'Plains Pocket Gopher',   sci:'Geomys bursarius',            cat:'mammal',    emoji:'🐭', range:'Great Plains', desc:'Rarely seen above ground, pocket gophers spend almost their entire lives tunneling. Their fur-lined cheek pouches—the "pockets"—carry food to underground caches.' },
+  { id:149,name:'Merriam\'s Kangaroo Rat',sci:'Dipodomys merriami',          cat:'mammal',    emoji:'🐀', range:'Desert Southwest', desc:'Hops on oversized hind legs like a tiny kangaroo and can survive its entire life without ever drinking water, extracting moisture from dry seeds through metabolic processes.' },
+  { id:150,name:'Ord\'s Kangaroo Rat',    sci:'Dipodomys ordii',             cat:'mammal',    emoji:'🐀', range:'Great Plains, western US', desc:'The most widespread kangaroo rat in North America, found from arid plains to sandy dunes. Its long tufted tail acts as a counterbalance during its bounding leaps.' },
+  { id:151,name:'Yellow-bellied Marmot',  sci:'Marmota flaviventris',        cat:'mammal',    emoji:'🦫', range:'Rocky Mountain meadows', desc:'Called "whistle-pigs" for their piercing alarm calls, these large ground squirrels hibernate up to eight months a year, losing nearly half their body weight.' },
+  { id:152,name:'Hoary Marmot',           sci:'Marmota caligata',            cat:'mammal',    emoji:'🦫', range:'Cascades, northern Rockies', desc:'The largest North American marmot, found in high alpine talus. Its silver-gray fur blends with lichen-covered rocks. Colonies post sentries that whistle to alert others of danger.' },
+  { id:153,name:'California Ground Squirrel',sci:'Otospermophilus beecheyi', cat:'mammal',    emoji:'🐿️', range:'California, Pacific Northwest', desc:'Has a remarkable evolutionary arms race with rattlesnakes—adults are partially immune to rattlesnake venom and can even rub shed snake skin on their fur to mask their scent.' },
+  { id:154,name:'Thirteen-lined Ground Squirrel',sci:'Ictidomys tridecemlineatus',cat:'mammal',emoji:'🐿️', range:'Great Plains, Midwest', desc:'Named for the 13 alternating stripes and rows of spots on its back. One of the deepest hibernators among rodents, its body temperature drops to just above freezing for months.' },
+  { id:155,name:'Golden-mantled Ground Squirrel',sci:'Callospermophilus lateralis',cat:'mammal',emoji:'🐿️', range:'Western mountains', desc:'Often confused with chipmunks, but lacks facial stripes. Common at mountain campgrounds, it boldly begs for food while stuffing its cheek pouches to bursting.' },
+  { id:156,name:'Black-tailed Prairie Dog',sci:'Cynomys ludovicianus',       cat:'mammal',    emoji:'🐿️', range:'Great Plains', desc:'Lives in vast underground "towns" that once held billions of individuals. A keystone species supporting over 160 other species, including the endangered black-footed ferret.' },
+  { id:157,name:'White-tailed Prairie Dog',sci:'Cynomys leucurus',           cat:'mammal',    emoji:'🐿️', range:'Wyoming, Colorado, Utah', desc:'Found in higher and more arid terrain than its black-tailed cousin. Unlike black-tailed prairie dogs, it hibernates through winter and does not have a true "town" social structure.' },
+  { id:158,name:'Long-tailed Weasel',      sci:'Mustela frenata',            cat:'mammal',    emoji:'🦡', range:'All of US', desc:'The most widespread weasel in North America. Can take prey much larger than itself by delivering a precise bite to the base of the skull. Turns white in winter in northern populations.' },
+  { id:159,name:'Short-tailed Weasel (Ermine)',sci:'Mustela erminea',        cat:'mammal',    emoji:'🦡', range:'Northern US', desc:'Famous for its brilliant white winter coat—historically prized for royal robes. Can hunt prey ten times its own weight and pursues rabbits right into their burrows.' },
+  { id:160,name:'Least Weasel',            sci:'Mustela nivalis',            cat:'mammal',    emoji:'🦡', range:'Northern US', desc:'The world\'s smallest carnivore, weighing as little as an AA battery. Despite its tiny size, it is a ferocious hunter capable of killing prey much larger than itself.' },
+  { id:161,name:'Wolverine',               sci:'Gulo gulo',                  cat:'mammal',    emoji:'🦡', range:'Northern Rockies, Cascades', desc:'Pound for pound one of the most fearless and powerful carnivores on Earth, capable of driving grizzly bears off kills. Extremely wide-ranging—individuals cover territories of hundreds of miles.' },
+  { id:162,name:'Ringtail',                sci:'Bassariscus astutus',         cat:'mammal',    emoji:'🦝', range:'Southwest US', desc:'Despite its raccoon-like appearance it\'s closer to the coati family. Miners called it "miner\'s cat" and kept them as mousers. Its spectacular tail is almost as long as its body.' },
+  { id:163,name:'Gray Fox',                sci:'Urocyon cinereoargenteus',    cat:'mammal',    emoji:'🦊', range:'Most of US', desc:'The only member of the dog family that routinely climbs trees, using hooked claws to escape predators and raid bird nests. Often seen trotting along brush edges at dusk.' },
+  { id:164,name:'Kit Fox',                 sci:'Vulpes macrotis',             cat:'mammal',    emoji:'🦊', range:'Desert Southwest, Great Basin', desc:'The smallest wild canid in North America, with enormous ears that radiate heat and amplify the sounds of underground prey. Primarily nocturnal and rarely seen.' },
+  { id:165,name:'Swift Fox',               sci:'Vulpes velox',                cat:'mammal',    emoji:'🦊', range:'Great Plains', desc:'Once nearly extirpated from the US, the swift fox has been successfully reintroduced to parts of its former range on the shortgrass prairies of the Great Plains.' },
+  { id:166,name:'Feral Horse (Mustang)',   sci:'Equus ferus caballus',        cat:'mammal',    emoji:'🐎', range:'Western US rangelands', desc:'Descendants of horses brought by Spanish conquistadors, mustangs have roamed western rangelands for 500 years. About 80,000 roam free on federal lands today.' },
+  { id:167,name:'Black-footed Ferret',     sci:'Mustela nigripes',            cat:'mammal',    emoji:'🦡', range:'Great Plains (reintroduced)', desc:'North America\'s most endangered mammal, declared extinct in the wild in 1979 until a small colony was found in Wyoming. Now being cloned and reintroduced to prairie dog colonies.' },
+  { id:168,name:'Northern Flying Squirrel',sci:'Glaucomys sabrinus',          cat:'mammal',    emoji:'🐿️', range:'Northern & mountain forests', desc:'Glides between trees on a membrane stretched between its wrists and ankles. Strictly nocturnal, it is far more common than people realize—just almost never seen.' },
+  { id:169,name:'Grizzly Bear',            sci:'Ursus arctos horribilis',     cat:'mammal',    emoji:'🐻', range:'Alaska, northern Rockies, Cascades', desc:'The apex predator of the North American wilderness. The hump on its back is a mass of muscle powering its digging. An adult can flip a 700-lb boulder with one paw.' },
+  { id:170,name:'Polar Bear',              sci:'Ursus maritimus',             cat:'mammal',    emoji:'🐻‍❄️', range:'Arctic Alaska', desc:'The world\'s largest land carnivore and a US resident of Arctic Alaska. Its fur is actually transparent, not white—each hollow hair shaft channels ultraviolet light to the black skin beneath.' },
+  { id:171,name:'Caribou (Reindeer)',      sci:'Rangifer tarandus',           cat:'mammal',    emoji:'🦌', range:'Alaska, northern Minnesota', desc:'Undertakes the longest land migration of any terrestrial mammal—up to 3,000 miles annually. Both sexes grow antlers, unique among deer. Their feet act as snowshoes and paddles.' },
+  { id:172,name:'Muskox',                  sci:'Ovibos moschatus',            cat:'mammal',    emoji:'🐂', range:'Arctic Alaska', desc:'A living relic of the Ice Age that survived while mammoths went extinct. When threatened, groups form a defensive circle with horns outward—a tactic effective against wolves but not rifles.' },
+  { id:173,name:'Dall\'s Porpoise',        sci:'Phocoenoides dalli',          cat:'mammal',    emoji:'🐬', range:'Pacific coast', desc:'One of the fastest cetaceans, reaching 34 mph and creating a distinctive rooster-tail spray when bow-riding ships. Its bold black-and-white pattern makes it unmistakable.' },
+  { id:174,name:'Gray Whale',              sci:'Eschrichtius robustus',       cat:'mammal',    emoji:'🐳', range:'Pacific coast (migrating)', desc:'Makes one of the longest migrations of any mammal—12,000 miles round trip between Arctic feeding grounds and Mexican lagoons. Famously friendly, approaching whale-watching boats.' },
+  { id:175,name:'Northern Elephant Seal',  sci:'Mirounga angustirostris',     cat:'mammal',    emoji:'🦭', range:'Pacific coast rookeries', desc:'Males grow a grotesque inflatable proboscis used to amplify bellowing challenges. Males can weigh 4,500 lbs—ten times the weight of females.' },
+  { id:176,name:'Sea Otter',               sci:'Enhydra lutris',              cat:'mammal',    emoji:'🦦', range:'Pacific coast kelp forests', desc:'The only marine mammal that uses rocks as tools to crack open shellfish on its chest. Without sea otters, sea urchins explode in population and devour kelp forests.' },
+  { id:177,name:'Collared Peccary (Javelina)',sci:'Pecari tajacu',            cat:'mammal',    emoji:'🐗', range:'Desert Southwest, Texas', desc:'Though pig-like in appearance, peccaries are not true pigs. Family groups use a large musk gland on their backs to recognize each other and reinforce social bonds.' },
+
+  // ── BIRDS (additional) ──
+  { id:178,name:'Greater Roadrunner',      sci:'Geococcyx californianus',     cat:'bird',      emoji:'🐦', range:'Southwest US', desc:'Prefers running to flying, reaching speeds of 20 mph on foot. Can kill and eat rattlesnakes by grabbing them and bashing them against rocks. The inspiration for the cartoon character.' },
+  { id:179,name:'Northern Mockingbird',    sci:'Mimus polyglottos',           cat:'bird',      emoji:'🐦', range:'All of US', desc:'Can mimic dozens of other bird species, frogs, insects, and even mechanical sounds. Males sometimes sing all night during full moons in spring.' },
+  { id:180,name:'Red-winged Blackbird',    sci:'Agelaius phoeniceus',         cat:'bird',      emoji:'🐦', range:'All of US', desc:'One of the most abundant birds in North America. Males fiercely defend territory, dive-bombing animals and people who venture too close to nesting sites.' },
+  { id:181,name:'Western Meadowlark',      sci:'Sturnella neglecta',          cat:'bird',      emoji:'🐦', range:'Western & central US', desc:'Its rich, bubbling song is the quintessential sound of open western grasslands. The state bird of six states—more than any other species.' },
+  { id:182,name:'Greater Prairie-Chicken', sci:'Tympanuchus cupido',          cat:'bird',      emoji:'🐦', range:'Central Great Plains', desc:'Males inflate orange neck sacs and produce a haunting booming call on communal display grounds called leks each spring—a spectacle increasingly rare as grasslands vanish.' },
+  { id:183,name:'Greater Sage-Grouse',     sci:'Centrocercus urophasianus',   cat:'bird',      emoji:'🐦', range:'Sagebrush steppe of western US', desc:'The largest grouse in North America. Males inflate two yellow air sacs and fan elaborate spiky tail feathers on leks at dawn. Completely dependent on intact sagebrush habitat.' },
+  { id:184,name:'Burrowing Owl',           sci:'Athene cunicularia',          cat:'bird',      emoji:'🦉', range:'Western & Florida grasslands', desc:'A tiny long-legged owl that nests underground, often in abandoned prairie dog burrows. Unlike most owls, it hunts by day and bobs its head comically when curious.' },
+  { id:185,name:'Great Gray Owl',          sci:'Strix nebulosa',              cat:'bird',      emoji:'🦉', range:'Northern US forests (winter)', desc:'North America\'s largest owl by length, with a massive facial disc that funnels sound. Can plunge through two feet of crusted snow to catch a vole it heard from 100 feet away.' },
+  { id:186,name:'Short-eared Owl',         sci:'Asio flammeus',               cat:'bird',      emoji:'🦉', range:'Open country across US', desc:'One of the few owls active during daylight, coursing low over marshes and grasslands on buoyant wingbeats. Nest on the ground in remote prairies and tundra.' },
+  { id:187,name:'Black-crowned Night-Heron',sci:'Nycticorax nycticorax',      cat:'bird',      emoji:'🦢', range:'Wetlands across US', desc:'Stocky and hunched, it feeds mostly at dusk and night. Its loud "quok!" call is a familiar sound of coastal wetlands after dark. One of the most widespread herons in the world.' },
+  { id:188,name:'American Bittern',        sci:'Botaurus lentiginosus',       cat:'bird',      emoji:'🦢', range:'Marshes across US', desc:'A master of camouflage—when alarmed, it stretches its neck upright and sways with the reeds, becoming nearly invisible. Its deep, resonant "pump-er-lunk" call carries for miles.' },
+  { id:189,name:'American Coot',           sci:'Fulica americana',            cat:'bird',      emoji:'🦆', range:'Wetlands across US', desc:'Looks like a duck but belongs to the rail family. Its lobed (not webbed) toes pump up and down when swimming in a distinctive nodding motion. Forms massive winter flocks.' },
+  { id:190,name:'Killdeer',                sci:'Charadrius vociferus',        cat:'bird',      emoji:'🐦', range:'All of US', desc:'Famous for its broken-wing display to lure predators away from its ground nest. Nests in parking lots and gravel rooftops far from water—the opposite of what its "shorebird" label suggests.' },
+  { id:191,name:'Clark\'s Nutcracker',     sci:'Nucifraga columbiana',        cat:'bird',      emoji:'🐦', range:'Western mountain forests', desc:'Has a specialized pouch under its tongue that carries up to 150 pine seeds at once. Caches tens of thousands of seeds each fall and remembers the location of most of them months later.' },
+  { id:192,name:'Steller\'s Jay',          sci:'Cyanocitta stelleri',         cat:'bird',      emoji:'🐦', range:'Western US forests', desc:'The only crested jay west of the Rockies. Bold and clever, it will mimic the calls of hawks to scare other birds away from food sources. The western counterpart to the blue jay.' },
+  { id:193,name:'Gray Catbird',            sci:'Dumetella carolinensis',      cat:'bird',      emoji:'🐦', range:'Eastern & central US', desc:'A skilled mimic that includes a distinctive mew call like a cat in its repertoire—hence the name. Males can sing continuously for 10 minutes, stitching together hundreds of borrowed phrases.' },
+  { id:194,name:'Brown Thrasher',          sci:'Toxostoma rufum',             cat:'bird',      emoji:'🐦', range:'Eastern US', desc:'The largest mimicking bird in the East, with a repertoire exceeding 1,000 song types—more than any other North American bird. Usually sings each phrase exactly twice before moving on.' },
+  { id:195,name:'Yellow Warbler',          sci:'Setophaga petechia',          cat:'bird',      emoji:'🐦', range:'All of US (summer)', desc:'One of the most widespread warblers, breeding across virtually the entire continent. When a cowbird lays an egg in its nest, the yellow warbler sometimes just builds a new nest floor on top of it.' },
+  { id:196,name:'Common Nighthawk',        sci:'Chordeiles minor',            cat:'bird',      emoji:'🐦', range:'All of US (summer)', desc:'Despite the name, it is neither a hawk nor strictly nocturnal—it often hunts at dusk and dawn over cities. Males make a booming sound with their wings in a dramatic aerial dive display.' },
+  { id:197,name:'Chimney Swift',           sci:'Chaetura pelagica',           cat:'bird',      emoji:'🐦', range:'Eastern US (summer)', desc:'Spends almost its entire life airborne—eating, drinking, bathing, mating, and even sleeping on the wing. Cannot perch on branches; it clings to vertical surfaces like chimneys.' },
+  { id:198,name:'White Ibis',              sci:'Eudocimus albus',             cat:'bird',      emoji:'🦩', range:'Southeast US coast', desc:'Feeds by probing mud with its long curved bill. Young birds are brown and white, only gaining the all-white adult plumage gradually. Nests in large mixed-species colonies.' },
+  { id:199,name:'Ruffed Grouse',           sci:'Bonasa umbellus',             cat:'bird',      emoji:'🐦', range:'Northern & Appalachian forests', desc:'Males "drum" by beating their wings so rapidly it creates a low-frequency thumping sound that carries through dense forest. The sound is so low-pitched it can be felt more than heard.' },
+  { id:200,name:'American Woodcock',       sci:'Scolopax minor',              cat:'bird',      emoji:'🐦', range:'Eastern US', desc:'A plump shorebird of moist woodlands that performs an elaborate sky dance at dusk. Its eyes are so far back on its head it has nearly 360-degree vision and can see predators behind it.' },
+
+  // ── REPTILES (additional) ──
+  { id:201,name:'Gopher Tortoise',         sci:'Gopherus polyphemus',         cat:'reptile',   emoji:'🐢', range:'Southeast US', desc:'A keystone species whose burrows, up to 40 feet long, shelter over 360 other species including gopher frogs, indigo snakes, and burrowing owls.' },
+  { id:202,name:'Chuckwalla',              sci:'Sauromalus ater',             cat:'reptile',   emoji:'🦎', range:'Mojave & Sonoran Deserts', desc:'When threatened, inflates its body like a balloon and wedges itself into rock crevices, making it nearly impossible to extract. A strict vegetarian that grazes on desert plants.' },
+  { id:203,name:'Sidewinder Rattlesnake',  sci:'Crotalus cerastes',           cat:'reptile',   emoji:'🐍', range:'Mojave & Sonoran Deserts', desc:'Moves in a unique lateral looping motion that provides traction on loose sand and leaves J-shaped tracks. Heat-sensing pits help it hunt mice and lizards at night.' },
+  { id:204,name:'Eastern Milk Snake',      sci:'Lampropeltis triangulum',     cat:'reptile',   emoji:'🐍', range:'Eastern US', desc:'A harmless mimic of the venomous coral snake, though its band order is different. An excellent constrictor that preys on rodents, making it beneficial around farms and barns.' },
+  { id:205,name:'Eastern Indigo Snake',    sci:'Drymarchon couperi',          cat:'reptile',   emoji:'🐍', range:'Southeast US', desc:'The longest native snake in the US, reaching 8 feet. Feeds on rattlesnakes and is immune to their venom. Depends on gopher tortoise burrows for shelter—another reason those burrows are so important.' },
+  { id:206,name:'Gopher Snake',            sci:'Pituophis catenifer',         cat:'reptile',   emoji:'🐍', range:'Western US', desc:'When threatened, hisses loudly, flattens its head, and vibrates its tail in dry leaves to mimic a rattlesnake. Can reach 9 feet and is one of the most effective rodent controllers in western rangeland.' },
+  { id:207,name:'Spiny Softshell Turtle',  sci:'Apalone spinifera',           cat:'reptile',   emoji:'🐢', range:'Rivers across US', desc:'Its leathery, pancake-flat shell and long snorkel-like nose allow it to hide under sand in shallow water and breathe without surfacing. Incredibly fast both in water and on land.' },
+  { id:208,name:'Massasauga',              sci:'Sistrurus catenatus',         cat:'reptile',   emoji:'🐍', range:'Great Lakes, central US', desc:'A small rattlesnake of wet prairies and bogs. Despite its venom, it is shy and reclusive, and bites are rare. Populations have declined sharply with the loss of wetland habitat.' },
+  { id:209,name:'Six-lined Racerunner',    sci:'Aspidoscelis sexlineata',     cat:'reptile',   emoji:'🦎', range:'Eastern & central US', desc:'One of the fastest lizards in North America, reaching speeds of 18 mph. Active only on the hottest days when most other lizards retreat to shade.' },
+  { id:210,name:'Common Five-lined Skink', sci:'Plestiodon fasciatus',        cat:'reptile',   emoji:'🦎', range:'Eastern US', desc:'Young individuals have a brilliant blue tail that distracts predators—the tail detaches, wriggles to confuse attackers, and eventually regrows. Adults lose the blue color over time.' },
+
+  // ── AMPHIBIANS (additional) ──
+  { id:211,name:'Northern Leopard Frog',   sci:'Lithobates pipiens',          cat:'amphibian', emoji:'🐸', range:'Northern & central US', desc:'The classic "laboratory frog" of biology classrooms for generations. Irregularly rounded brown spots give it its name. One of the few frogs that moves far from water in summer to hunt.' },
+  { id:212,name:'Pickerel Frog',           sci:'Lithobates palustris',        cat:'amphibian', emoji:'🐸', range:'Eastern US', desc:'Produces a mild toxic skin secretion that makes it unpalatable to most predators and can kill other frogs if housed together. Distinguished from leopard frogs by its square spots.' },
+  { id:213,name:'Couch\'s Spadefoot',      sci:'Scaphiopus couchii',          cat:'amphibian', emoji:'🐸', range:'Desert Southwest', desc:'May spend 11 months per year underground. After summer rains, thousands emerge simultaneously, breed explosively in temporary pools, and tadpoles transform in as little as 9 days before the water evaporates.' },
+  { id:214,name:'California Red-legged Frog',sci:'Rana draytonii',            cat:'amphibian', emoji:'🐸', range:'Coastal California', desc:'The frog of Mark Twain\'s famous jumping frog story. Once extremely abundant in California, it has disappeared from 70% of its historic range due to introduced predators and habitat loss.' },
+  { id:215,name:'Western Toad',            sci:'Anaxyrus boreas',             cat:'amphibian', emoji:'🐸', range:'Western US', desc:'Unlike many toads, it doesn\'t trill but produces a soft peeping call like a baby chick. Adults may travel miles from breeding ponds to upland summer foraging areas.' },
+  { id:216,name:'Barking Tree Frog',       sci:'Hyla gratiosa',               cat:'amphibian', emoji:'🐸', range:'Southeast US', desc:'The largest native tree frog in the US. Its call is a deep, hollow "dunk" repeated rapidly that supposedly resembles distant barking. Can change color dramatically based on temperature and light.' },
+  { id:217,name:'Green Tree Frog',         sci:'Hyla cinerea',                cat:'amphibian', emoji:'🐸', range:'Southeast US', desc:'The state amphibian of Georgia and Louisiana. Perches on windows to catch insects drawn to light—a behavior that has endeared it to people living across the South.' },
+  { id:218,name:'Jefferson Salamander',    sci:'Ambystoma jeffersonianum',    cat:'amphibian', emoji:'🦎', range:'Eastern US', desc:'Migrates en masse to vernal pools on the first warm rainy nights of late winter, sometimes while snow is still on the ground. Often hybridizes with blue-spotted salamanders.' },
+
+  // ── FISH (additional) ──
+  { id:219,name:'American Eel',            sci:'Anguilla rostrata',           cat:'fish',      emoji:'🐟', range:'Atlantic coast rivers', desc:'Spawns in the Sargasso Sea, then spends 5–20 years living in freshwater rivers before returning to the ocean to breed and die. One of the only fish to migrate the reverse direction—sea to fresh to sea.' },
+  { id:220,name:'Bowfin',                  sci:'Amia calva',                  cat:'fish',      emoji:'🐟', range:'Eastern US lakes & swamps', desc:'A living fossil—the sole surviving member of an ancient fish lineage that stretches back 150 million years. Breathes air using a modified swim bladder and can survive in oxygen-depleted water.' },
+  { id:221,name:'Gulf Sturgeon',           sci:'Acipenser oxyrinchus desotoi',cat:'fish',      emoji:'🐟', range:'Gulf Coast rivers', desc:'Spends winter in Gulf of Mexico feeding voraciously, then moves into rivers for summer where it eats nothing for 5 months, living off fat reserves. Can leap completely out of the water.' },
+  { id:222,name:'Smallmouth Bass',         sci:'Micropterus dolomieu',        cat:'fish',      emoji:'🐟', range:'Eastern & central US', desc:'Considered by many anglers to be the greatest freshwater sport fish for its size—pound for pound a far more determined fighter than largemouth bass. Prefers clear, rocky streams and lakes.' },
+  { id:223,name:'Brook Trout',             sci:'Salvelinus fontinalis',       cat:'fish',      emoji:'🐟', range:'Eastern US mountain streams', desc:'Technically a char, not a true trout. Its worm-like markings (vermiculations) on its back are unique among North American fish. Requires the coldest, purest water—a sensitive indicator of stream health.' },
+  { id:224,name:'Atlantic Salmon',         sci:'Salmo salar',                 cat:'fish',      emoji:'🐟', range:'New England rivers (rare)', desc:'Once so abundant in New England rivers that servants specified in contracts they would not eat salmon more than three times a week. Now rare due to dams and overfishing, subject to intensive restoration.' },
+  { id:225,name:'Steelhead',               sci:'Oncorhynchus mykiss',         cat:'fish',      emoji:'🐟', range:'Pacific Northwest rivers', desc:'The ocean-going form of rainbow trout. After spending years in the ocean, it returns to its natal river to spawn—but unlike Pacific salmon, most steelhead survive to spawn again.' },
+  { id:226,name:'Bluegill',                sci:'Lepomis macrochirus',         cat:'fish',      emoji:'🐟', range:'Eastern & central US', desc:'The most commonly caught freshwater fish in the US and a classic introduction to fishing for many Americans. Males fan out and guard circular nests on shallow lake bottoms in dense colonies.' },
+
+  // ── INVERTEBRATES (additional) ──
+  { id:227,name:'Desert Tarantula',        sci:'Aphonopelma chalcodes',       cat:'insect',    emoji:'🕷️', range:'Sonoran Desert, Southwest', desc:'Despite their fearsome reputation, desert tarantulas are docile and rarely bite humans. Males wander in search of females in late summer—the origin of countless "tarantula migration" stories in Arizona.' },
+  { id:228,name:'Tarantula Hawk',          sci:'Pepsis grossa',               cat:'insect',    emoji:'🪲', range:'Desert Southwest', desc:'A wasp with one of the most painful stings of any insect on the Schmidt Pain Index (2nd only to bullet ant). Paralyzes tarantulas with its sting to use as a living incubator for its larvae.' },
+  { id:229,name:'Arizona Bark Scorpion',   sci:'Centruroides sculpturatus',   cat:'insect',    emoji:'🦂', range:'Sonoran Desert', desc:'The most venomous scorpion in North America and the only one dangerous to healthy adults. Glows bright blue-green under UV light—a popular way to find them at night.' },
+  { id:230,name:'Black Widow Spider',      sci:'Latrodectus hesperus',        cat:'insect',    emoji:'🕷️', range:'Western & southern US', desc:'The female\'s neurotoxic venom is 15 times more potent than a rattlesnake\'s by volume, though the much smaller amount injected rarely causes death in healthy adults. Males are harmless.' },
+  { id:231,name:'Brown Recluse',           sci:'Loxosceles reclusa',          cat:'insect',    emoji:'🕷️', range:'South-central US', desc:'Identified by a distinctive violin-shaped marking. Its venom causes tissue death around the bite. Shy and non-aggressive—most bites occur when people accidentally compress a hidden spider.' },
+  { id:232,name:'Eastern Dobsonfly',       sci:'Corydalus cornutus',          cat:'insect',    emoji:'🪲', range:'Eastern US streams', desc:'Males have enormous curved mandibles up to an inch long—used only for grasping females during mating, not for defense. Larvae (hellgrammites) live in streams and are prized fishing bait.' },
+  { id:233,name:'Giant Water Bug',         sci:'Lethocerus americanus',       cat:'insect',    emoji:'🪲', range:'All of US', desc:'Called "toe-biters," these are among the largest insects in North America. Fearlessly attacks frogs, fish, and salamanders several times its size, injecting saliva that liquefies tissue.' },
+  { id:234,name:'Pipevine Swallowtail',    sci:'Battus philenor',             cat:'insect',    emoji:'🦋', range:'Southern & eastern US', desc:'Its caterpillars sequester toxic chemicals from pipevine plants, making the adults unpalatable. Several other butterfly species mimic its iridescent blue-black coloration to gain protection.' },
+  { id:235,name:'Giant Swallowtail',       sci:'Papilio cresphontes',         cat:'insect',    emoji:'🦋', range:'Eastern US', desc:'The largest butterfly in North America with a wingspan reaching 6 inches. Its caterpillars—called "orange dogs"—mimic bird droppings with remarkable accuracy.' },
+  { id:236,name:'Zebra Longwing',          sci:'Heliconius charithonia',      cat:'insect',    emoji:'🦋', range:'Southern US, Florida', desc:'Florida\'s state butterfly. Uniquely among butterflies, it collects and digests pollen for protein, which allows it to live up to 6 months—far longer than most butterflies.' },
+  { id:237,name:'Question Mark Butterfly', sci:'Polygonia interrogationis',   cat:'insect',    emoji:'🦋', range:'Eastern US', desc:'Named for a tiny silver question-mark shape on the underside of its wing. Overwinters as an adult, pressing flat against bark with wings closed to appear as a dead leaf.' },
+  { id:238,name:'American Snout Butterfly',sci:'Libytheana carinenta',        cat:'insect',    emoji:'🦋', range:'Southern US', desc:'Periodically erupts in massive southward migrations of millions of individuals in Texas, possibly triggered by rains that cause hackberry trees—its only larval host plant—to flush new growth.' },
+  { id:239,name:'Velvet Ant (Cow Killer)', sci:'Dasymutilla occidentalis',    cat:'insect',    emoji:'🐜', range:'Eastern US', desc:'Despite the fuzzy, ant-like appearance of the female, this is actually a wingless wasp. Its sting is legendary for its intensity—supposedly strong enough to kill a cow (it cannot).' },
+  { id:240,name:'Periodical Cicada',       sci:'Magicicada septendecim',      cat:'insect',    emoji:'🪲', range:'Eastern US', desc:'Emerges in synchronized broods of billions after spending 13 or 17 years underground. The prime-number lifecycle is thought to be an evolutionary strategy to avoid synchronizing with predator population cycles.' },
+
+  // ── MAMMALS (additional II) ──
+  { id:241,name:'Island Fox',             sci:'Urocyon littoralis',           cat:'mammal',    emoji:'🦊', range:'Channel Islands, California', desc:'Found only on six of California\'s Channel Islands, it is the smallest fox in the US—about the size of a house cat. After a catastrophic decline caused by golden eagles, it was brought back from the brink in one of the fastest endangered species recoveries ever recorded.' },
+  { id:242,name:'Star-nosed Mole',        sci:'Condylura cristata',           cat:'mammal',    emoji:'🐾', range:'Eastern US & Canada', desc:'Has 22 pink fleshy tentacles ringing its nose containing more nerve fibers than a human hand. It is the fastest-eating mammal on Earth, identifying and consuming a food item in under 227 milliseconds.' },
+  { id:243,name:'Nutria',                 sci:'Myocastor coypus',             cat:'mammal',    emoji:'🦫', range:'Gulf Coast, Pacific Northwest (introduced)', desc:'A large South American rodent introduced for the fur trade that has escaped into US wetlands and causes enormous ecological damage by uprooting marsh vegetation entirely.' },
+  { id:244,name:'Steller Sea Lion',       sci:'Eumetopias jubatus',           cat:'mammal',    emoji:'🦭', range:'Pacific coast, Alaska', desc:'The largest member of the eared seal family, with males reaching 2,500 lbs. Named after naturalist Georg Steller who documented them during Vitus Bering\'s 1741 expedition to Alaska.' },
+  { id:245,name:'Northern Fur Seal',      sci:'Callorhinus ursinus',          cat:'mammal',    emoji:'🦭', range:'Pacific coast (breeding Pribilof Islands)', desc:'Has the densest fur of any mammal—300,000 hairs per square inch, compared to about 100,000 on an entire human head. Spends most of the year at sea, coming ashore only to breed.' },
+  { id:246,name:'Walrus',                 sci:'Odobenus rosmarus',            cat:'mammal',    emoji:'🦭', range:'Arctic Alaska', desc:'Uses its iconic tusks—elongated canine teeth—as an ice pick to haul its enormous body onto ice floes, for dominance fights, and to impress mates. A 3,700-lb male\'s tusks can reach 3 feet long.' },
+  { id:247,name:'Dall Sheep',             sci:'Ovis dalli',                   cat:'mammal',    emoji:'🐑', range:'Alaska mountains', desc:'Pure white sheep of Alaska\'s alpine peaks. Males carry massive spiral horns that grow throughout their lives; a full curl takes 8 years. Age can be read from growth rings on the horns.' },
+
+  // ── BIRDS (additional II) ──
+  { id:248,name:'Barn Owl',               sci:'Tyto alba',                    cat:'bird',      emoji:'🦉', range:'All of US', desc:'Its heart-shaped white face is a parabolic dish that funnels sound to its asymmetrically positioned ears. Can hunt in complete darkness by sound alone, detecting a mouse hidden under a foot of snow.' },
+  { id:249,name:'Monk Parakeet',          sci:'Myiopsitta monachus',          cat:'bird',      emoji:'🦜', range:'Florida, Texas, Northeast cities (feral)', desc:'An Argentine parrot that escaped captivity in the 1960s and established feral colonies across the US. The only parrot in the world that builds large communal stick nests rather than nesting in cavities.' },
+  { id:250,name:'Red-crowned Parrot',     sci:'Amazona viridigenalis',        cat:'bird',      emoji:'🦜', range:'Southern California, Texas (feral)', desc:'Native to northeastern Mexico and critically endangered in its home range, but a thriving feral population in California now rivals the wild population in size. Loud and conspicuous in suburban neighborhoods.' },
+  { id:251,name:'Nanday Parakeet',        sci:'Aratinga nenday',              cat:'bird',      emoji:'🦜', range:'Florida, California (feral)', desc:'A black-hooded South American parakeet with established feral colonies in Florida and California. Flocks are conspicuous and noisy, roosting communally in palms and making a harsh, screeching call.' },
+  { id:252,name:'Atlantic Puffin',        sci:'Fratercula arctica',           cat:'bird',      emoji:'🐦', range:'Gulf of Maine (breeding islands)', desc:'Spends most of its life at sea but returns to the same burrow on rocky Atlantic islands each year. Its distinctive striped bill is actually dull gray in winter—the colorful summer sheath is shed.' },
+  { id:253,name:'Common Murre',           sci:'Uria aalge',                   cat:'bird',      emoji:'🐦', range:'Pacific & Atlantic coasts', desc:'Nests on sheer cliff ledges so tightly packed that birds touch on all sides. Its egg is pear-shaped so it spins in a tight circle rather than rolling off the narrow cliff edge.' },
+  { id:254,name:'Herring Gull',           sci:'Larus argentatus',             cat:'bird',      emoji:'🐦', range:'All US coasts & Great Lakes', desc:'The archetypal "seagull" of the northern US. Learned to drop shellfish onto hard surfaces to crack them open—a behavior observed spreading through populations in real time.' },
+  { id:255,name:'Laughing Gull',          sci:'Leucophaeus atricilla',        cat:'bird',      emoji:'🐦', range:'Atlantic & Gulf coasts', desc:'Named for its loud, laughing call that echoes across southeastern beaches and marinas. Aggressively robs food from pelicans by landing on their heads as the pouch drains.' },
+  { id:256,name:'Least Tern',             sci:'Sternula antillarum',          cat:'bird',      emoji:'🐦', range:'US coasts & interior rivers', desc:'The smallest tern in the US. Plunge-dives from height to catch fish and feeds them to its mate as courtship. Nests on bare sand and gravel, making it highly vulnerable to beach disturbance.' },
+  { id:257,name:'Black Skimmer',          sci:'Rynchops niger',               cat:'bird',      emoji:'🐦', range:'Atlantic & Gulf coasts', desc:'The only bird in the US with a lower mandible longer than the upper. Flies low with its blade-like lower bill slicing the water surface, snapping shut instantly when it touches a fish.' },
+  { id:258,name:'Red Knot',               sci:'Calidris canutus',             cat:'bird',      emoji:'🐦', range:'Atlantic coast (migratory)', desc:'Undertakes one of the longest migrations of any bird—18,000 miles round trip from the Arctic to South America. Depends critically on Delaware Bay horseshoe crab eggs to refuel in May.' },
+  { id:259,name:'Long-billed Curlew',     sci:'Numenius americanus',          cat:'bird',      emoji:'🐦', range:'Western US grasslands', desc:'North America\'s largest shorebird, with a bill up to 9 inches long—one of the most extreme bill proportions of any bird. Inserts its bill into burrows to extract burrowing owls, crayfish, and crabs.' },
+  { id:260,name:'Prothonotary Warbler',   sci:'Protonotaria citrea',          cat:'bird',      emoji:'🐦', range:'Eastern US swamps', desc:'A blazing golden bird of flooded forests and swamps. The only eastern warbler that nests in natural tree cavities over water. Famous for playing a role in the Alger Hiss espionage trial in 1948.' },
+  { id:261,name:'Kirtland\'s Warbler',   sci:'Setophaga kirtlandii',         cat:'bird',      emoji:'🐦', range:'Michigan jack pine forests', desc:'One of the rarest warblers in the world, nesting exclusively in young jack pine forests in Michigan. Numbers dropped to 167 singing males in 1987 before intensive management and cowbird control reversed the decline.' },
+  { id:262,name:'Red Crossbill',          sci:'Loxia curvirostra',            cat:'bird',      emoji:'🐦', range:'Conifer forests across US', desc:'Its crossed bill tips are a specialized tool for prying open pine cones. Breeds whenever and wherever cone crops are abundant—sometimes in January in northern forests when food is plentiful.' },
+  { id:263,name:'Snow Bunting',           sci:'Plectrophenax nivalis',         cat:'bird',      emoji:'🐦', range:'Northern US (winter)', desc:'A blizzard bird—arrives in the US when snow falls across the northern plains. Flocks wheel and flash white against gray winter skies, earning them names like "snowflakes" and "snowbirds."' },
+  { id:264,name:'Purple Martin',          sci:'Progne subis',                 cat:'bird',      emoji:'🐦', range:'Eastern US (summer)', desc:'North America\'s largest swallow and entirely dependent in the east on human-provided nest boxes. Early Native American traditions of hanging hollow gourds for martins predate European contact.' },
+  { id:265,name:'Barn Swallow',           sci:'Hirundo rustica',              cat:'bird',      emoji:'🐦', range:'All of US (summer)', desc:'The most widespread swallow in the world, found on every continent except Antarctica. Builds cup-shaped mud nests on human structures and has co-evolved with humans for thousands of years.' },
+
+  // ── REPTILES (additional II) ──
+  { id:266,name:'Eastern Black Racer',    sci:'Coluber constrictor constrictor',cat:'reptile', emoji:'🐍', range:'Eastern US', desc:'Despite the name "constrictor," it doesn\'t actually constrict—it simply grabs and swallows prey alive. Can reach speeds of 4 mph and hunts actively through brush during the day, unlike most snakes.' },
+  { id:267,name:'Eastern Hognose Snake',  sci:'Heterodon platirhinos',        cat:'reptile',   emoji:'🐍', range:'Eastern US', desc:'Performs one of nature\'s most dramatic bluffs: flattens its neck like a cobra, hisses, and mock-strikes when threatened. If that fails, it rolls onto its back, opens its mouth, and plays dead convincingly.' },
+  { id:268,name:'Rubber Boa',             sci:'Charina bottae',               cat:'reptile',   emoji:'🐍', range:'Western US', desc:'One of only two boa species native to the US. So gentle and slow-moving it can be held immediately after capture. Has a blunt, rubber-tipped tail that mimics its head to confuse predators.' },
+  { id:269,name:'Kemp\'s Ridley Sea Turtle',sci:'Lepidochelys kempii',        cat:'reptile',   emoji:'🐢', range:'Gulf Coast, Atlantic coast', desc:'The most endangered sea turtle in the world. Nearly the entire population nests on a single 16-mile stretch of beach in Tamaulipas, Mexico, and the Texas coast in a spectacular mass nesting called an "arribada."' },
+  { id:270,name:'Hawksbill Sea Turtle',   sci:'Eretmochelys imbricata',       cat:'reptile',   emoji:'🐢', range:'Gulf Coast, Florida', desc:'Its narrow beak is adapted for extracting sea sponges from coral reef crevices. Historically hunted nearly to extinction for its beautiful shell material—"tortoiseshell"—used in jewelry and combs.' },
+  { id:271,name:'Eastern Glass Lizard',   sci:'Ophisaurus ventralis',         cat:'reptile',   emoji:'🦎', range:'Southeast US', desc:'A legless lizard—not a snake—that can lose its tail (which makes up two-thirds of its length) as a defensive trick. Has ear openings and moveable eyelids, which snakes lack.' },
+  { id:272,name:'Burmese Python',         sci:'Python bivittatus',            cat:'reptile',   emoji:'🐍', range:'South Florida (invasive)', desc:'An introduced giant that has devastated mammal populations in the Everglades. Populations of raccoons, opossums, and rabbits have collapsed by over 90% since the snake\'s establishment. Individuals reach 18 feet.' },
+  { id:273,name:'Coachwhip',              sci:'Masticophis flagellum',        cat:'reptile',   emoji:'🐍', range:'Southern & western US', desc:'One of the fastest snakes in North America. Named for its braided whip-like appearance and can "whip" its body with surprising speed. Folklore claims it chases people and whips them, which is false.' },
+
+  // ── AMPHIBIANS (additional II) ──
+  { id:274,name:'California Newt',        sci:'Taricha torosa',               cat:'amphibian', emoji:'🦎', range:'Coastal California', desc:'Produces tetrodotoxin—the same toxin as puffer fish—making it one of the most toxic animals in North America. A single newt contains enough toxin to kill 25,000 mice. Garter snakes in its range have evolved resistance.' },
+  { id:275,name:'Rough-skinned Newt',     sci:'Taricha granulosa',            cat:'amphibian', emoji:'🦎', range:'Pacific Northwest', desc:'Its population and the common garter snake\'s toxin resistance are locked in a coevolutionary arms race, with newts becoming more toxic and snakes becoming more resistant in tandem over millennia.' },
+  { id:276,name:'Ensatina',               sci:'Ensatina eschscholtzii',       cat:'amphibian', emoji:'🦎', range:'Pacific coast', desc:'A textbook example of a "ring species"—populations form a ring around California\'s Central Valley, with neighboring populations able to interbreed but the two end-of-the-ring populations that meet in the south cannot.' },
+  { id:277,name:'Tailed Frog',            sci:'Ascaphus truei',               cat:'amphibian', emoji:'🐸', range:'Pacific Northwest streams', desc:'One of the most ancient frog lineages in North America, diverged from other frogs 200 million years ago. The "tail" is actually a mating organ unique among frogs, an adaptation to the swift mountain streams where it breeds.' },
+  { id:278,name:'Arboreal Salamander',    sci:'Aneides lugubris',             cat:'amphibian', emoji:'🦎', range:'California coast ranges', desc:'One of the few salamanders that can climb trees, with slightly prehensile tails and enlarged toe pads. Bites hard when handled—unusual for a salamander. Nests communally in tree cavities and logs.' },
+
+  // ── FISH — SHARKS & MARINE (additional) ──
+  { id:279,name:'Great White Shark',      sci:'Carcharodon carcharias',       cat:'fish',      emoji:'🦈', range:'US coastal waters (both coasts)', desc:'The ocean\'s apex predator and the largest predatory fish on Earth. Contrary to its movie reputation, it prefers seals and sea lions to humans. Numbers are rising along the California and New England coasts after decades of protection.' },
+  { id:280,name:'Leopard Shark',          sci:'Triakis semifasciata',         cat:'fish',      emoji:'🦈', range:'Pacific coast, especially California bays', desc:'One of the most common sharks in California bays and estuaries. Its striking spotted pattern makes it unmistakable. Harmless to humans and frequently seen in shallow water at La Jolla Cove, San Francisco Bay, and Tomales Bay.' },
+  { id:281,name:'Bull Shark',             sci:'Carcharhinus leucas',          cat:'fish',      emoji:'🦈', range:'Gulf Coast, Atlantic coast, large rivers', desc:'The most dangerous shark to humans, responsible for more attacks than any other species. Uniquely can tolerate freshwater and has been found in the Mississippi River hundreds of miles from the sea.' },
+  { id:282,name:'Scalloped Hammerhead',   sci:'Sphyrna lewini',               cat:'fish',      emoji:'🦈', range:'Atlantic & Pacific coasts', desc:'The distinctive hammer-shaped head (cephalofoil) gives it 360-degree vertical vision and houses an amplified array of electroreceptors. Forms enormous schools of hundreds off Pacific coasts during summer.' },
+  { id:283,name:'Whale Shark',            sci:'Rhincodon typus',              cat:'fish',      emoji:'🦈', range:'Gulf of Mexico, Atlantic coast (seasonal)', desc:'The largest fish on Earth, reaching 40 feet, and completely harmless—a filter feeder that scoops up plankton and fish eggs. Known aggregations off Isla Holbox, Mexico attract visitors from the US southern coast.' },
+  { id:284,name:'Tiger Shark',            sci:'Galeocerdo cuvier',            cat:'fish',      emoji:'🦈', range:'Gulf Coast, Atlantic & Pacific coasts', desc:'Second only to great whites in attacks on humans. Its indiscriminate appetite is legendary—license plates, tires, and chicken coops have been found in its stomach. Tiger stripes fade with age.' },
+  { id:285,name:'Nurse Shark',            sci:'Ginglymostoma cirratum',       cat:'fish',      emoji:'🦈', range:'Atlantic coast, Gulf of Mexico', desc:'Spends most of its day motionless on the sea floor or wedged under coral ledges. Uses powerful suction to inhale prey from rock crevices. Harmless unless grabbed by the tail, in which case it bites tenaciously.' },
+  { id:286,name:'Pacific Halibut',        sci:'Hippoglossus stenolepis',      cat:'fish',      emoji:'🐟', range:'Pacific coast', desc:'The largest flatfish in the world, reaching 8 feet and 500 lbs. Both eyes migrate to the same side of the head as juveniles. A single fish can yield hundreds of pounds of meat.' },
+  { id:287,name:'Atlantic Bluefin Tuna',  sci:'Thunnus thynnus',              cat:'fish',      emoji:'🐟', range:'Atlantic coast', desc:'One of the largest bony fish—up to 1,500 lbs and 10 feet long. A warm-blooded fish that maintains body temperature above the surrounding water. Single bluefins have sold at auction for over $1 million in Japan.' },
+  { id:288,name:'Red Snapper',            sci:'Lutjanus campechanus',         cat:'fish',      emoji:'🐟', range:'Gulf of Mexico, Atlantic coast', desc:'One of the most sought-after sport and commercial fish in the Gulf of Mexico. Lives on rocky bottoms and offshore oil platforms for decades—age records reach 50 years. Distinct red eyes match its body color.' },
+  { id:289,name:'Goliath Grouper',        sci:'Epinephelus itajara',          cat:'fish',      emoji:'🐟', range:'Southeast Atlantic coast, Gulf Coast', desc:'Can reach 800 lbs and 8 feet. Was nearly fished to extinction; since a 1990 fishing ban, populations have rebounded dramatically around Florida reefs and wrecks. Known to stun prey with a powerful bass-drum "boom."' },
+  { id:290,name:'Atlantic Cod',           sci:'Gadus morhua',                 cat:'fish',      emoji:'🐟', range:'New England coast', desc:'The fish that fed Europe for centuries and drove the colonization of New England. Populations collapsed catastrophically in the 1990s due to overfishing and have largely failed to recover despite decades of fishing restrictions.' },
+
+  // ── INVERTEBRATES (additional II) ──
+  { id:291,name:'Banana Slug',            sci:'Ariolimax columbianus',        cat:'insect',    emoji:'🐛', range:'Pacific Northwest & California redwood forests', desc:'North America\'s largest land slug, reaching 10 inches, and named for its vivid yellow color. Produces copious mucus used for locomotion, moisture retention, and as an anesthetic—licking one will numb your tongue.' },
+  { id:292,name:'Giant Pacific Octopus',  sci:'Enteroctopus dofleini',        cat:'insect',    emoji:'🐙', range:'Pacific Northwest coast & rocky reefs', desc:'The largest octopus species, with arms spanning up to 14 feet. Has three hearts, blue copper-based blood, and nine brains. Can open jars, recognize individual human faces, and solve complex puzzles.' },
+  { id:293,name:'Moon Jellyfish',         sci:'Aurelia aurita',               cat:'insect',    emoji:'🪼', range:'Both US coasts', desc:'Translucent and bioluminescent, drifting with ocean currents in vast swarms called blooms. Despite their delicate appearance, they are voracious predators of zooplankton and fish larvae.' },
+  { id:294,name:'Lion\'s Mane Jellyfish', sci:'Cyanea capillata',             cat:'insect',    emoji:'🪼', range:'Pacific & Atlantic coasts (cold water)', desc:'The largest jellyfish in the world, with tentacles extending over 100 feet—longer than a blue whale. Found in cold northern waters, where blooms wash ashore on New England and Pacific Northwest beaches.' },
+  { id:295,name:'Portuguese Man o\' War', sci:'Physalia physalis',            cat:'insect',    emoji:'🪼', range:'Atlantic coast, Gulf of Mexico', desc:'Not a jellyfish but a colonial organism—a siphonophore—composed of genetically identical individuals, each specialized for a different function. Its tentacles can still sting hours after the animal is dead on the beach.' },
+  { id:296,name:'Purple Sea Urchin',      sci:'Strongylocentrotus purpuratus',cat:'insect',    emoji:'🦔', range:'Pacific coast tide pools', desc:'Excavates depressions in rock using its teeth and spines to hide from wave surge. When sea otters are absent, urchin populations explode and devour entire kelp forests, creating "urchin barrens."' },
+  { id:297,name:'Sunflower Sea Star',     sci:'Pycnopodia helianthoides',     cat:'insect',    emoji:'⭐', range:'Pacific coast (now critically endangered)', desc:'The largest sea star in the world with up to 24 arms. A critical predator of sea urchins that once kept kelp forests healthy. Sea star wasting disease wiped out over 90% of the population since 2013.' },
+  { id:298,name:'Giant Green Anemone',    sci:'Anthopleura xanthogrammica',   cat:'insect',    emoji:'🌺', range:'Pacific coast tide pools', desc:'Gets its vivid green color from symbiotic algae living inside its tissues—it partially photosynthesizes. Can clone itself by splitting in two, creating genetically identical patches on tide pool walls.' },
+  { id:299,name:'California Spiny Lobster',sci:'Panulirus interruptus',       cat:'insect',    emoji:'🦞', range:'Southern California coast', desc:'Unlike Atlantic lobsters, it lacks claws—instead it has long spiny antennae it rubs together to produce a rasping sound that deters predators. Highly prized in Southern California restaurants.' },
+  { id:300,name:'Mantis Shrimp',          sci:'Stomatopoda spp.',             cat:'insect',    emoji:'🦐', range:'Pacific & Atlantic coasts', desc:'Has 16 types of color receptors (humans have 3) and can see ultraviolet, infrared, and polarized light. Its "smasher" club can strike with the force of a .22 caliber bullet, shattering aquarium glass.' },
+];
+
+// ── State ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'wilddex_seen_v1';
+let seen = {};  // { animalId: dateString }
+let activeTab = 'all';
+let searchQuery = '';
+let activeFilter = 'all';
+let modalAnimal = null;
+
+function loadSeen() {
+  try { seen = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { seen = {}; }
+}
+function saveSeen() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(seen));
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function isSeen(id) { return seen[id] !== undefined; }
+function seenDate(id) { return seen[id] || null; }
+function totalSeen() { return Object.keys(seen).length; }
+function countSeenIn(cat) { return ANIMALS.filter(a => a.cat === cat && isSeen(a.id)).length; }
+function countIn(cat) { return ANIMALS.filter(a => a.cat === cat).length; }
+function catColor(catId) { return (CATEGORIES.find(c => c.id === catId) || {}).color || '#4caf50'; }
+function padNum(n) { return String(n).padStart(3,'0'); }
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+
+// ── Render: Header progress ────────────────────────────────────────────────
+function updateHeaderProgress() {
+  const total = ANIMALS.length;
+  const s = totalSeen();
+  document.getElementById('overall-count').textContent = `${s} / ${total}`;
+  document.getElementById('overall-fill').style.width = `${(s/total*100).toFixed(1)}%`;
+}
+
+// ── Render: Stats panel ────────────────────────────────────────────────────
+function renderStats() {
+  const panel = document.getElementById('stats-panel');
+  const cards = CATEGORIES.map(cat => {
+    const s = countSeenIn(cat.id);
+    const t = countIn(cat.id);
+    const pct = t ? Math.round(s/t*100) : 0;
+    return `<div class="stat-card">
+      <div class="stat-icon">${cat.icon}</div>
+      <div class="stat-label">${cat.label}</div>
+      <div class="stat-value">${pct}%</div>
+      <div class="stat-sub">${s} / ${t}</div>
+    </div>`;
+  }).join('');
+  panel.innerHTML = `<div class="stats-title">Your Progress</div><div class="stats-grid">${cards}</div>`;
+}
+
+// ── Render: Tabs ───────────────────────────────────────────────────────────
+function renderTabs() {
+  const container = document.getElementById('tabs');
+  const allCount = ANIMALS.length;
+  const allSeen = totalSeen();
+  let html = `<button class="tab ${activeTab==='all'?'active':''}" data-tab="all">All <span class="count">${allSeen}/${allCount}</span></button>`;
+  CATEGORIES.forEach(cat => {
+    const s = countSeenIn(cat.id), t = countIn(cat.id);
+    html += `<button class="tab ${activeTab===cat.id?'active':''}" data-tab="${cat.id}">${cat.icon} ${cat.label} <span class="count">${s}/${t}</span></button>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.tab;
+      renderTabs();
+      renderContent();
+    });
+  });
+}
+
+// ── Render: Content grid ───────────────────────────────────────────────────
+function getFilteredAnimals() {
+  let animals = ANIMALS;
+  if (activeTab !== 'all') animals = animals.filter(a => a.cat === activeTab);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    animals = animals.filter(a => a.name.toLowerCase().includes(q) || a.sci.toLowerCase().includes(q));
+  }
+  if (activeFilter === 'seen') animals = animals.filter(a => isSeen(a.id));
+  if (activeFilter === 'unseen') animals = animals.filter(a => !isSeen(a.id));
+  return animals;
+}
+
+function renderContent() {
+  const animals = getFilteredAnimals();
+  document.getElementById('result-count').textContent = `${animals.length} species`;
+
+  const content = document.getElementById('content');
+  if (!animals.length) {
+    content.innerHTML = `<div class="empty"><span class="empty-icon">🔭</span>No species match your search.</div>`;
+    return;
+  }
+
+  // Group by category for "All" view; single group otherwise
+  let grouped;
+  if (activeTab === 'all' && !searchQuery) {
+    grouped = CATEGORIES.map(cat => ({
+      cat,
+      animals: animals.filter(a => a.cat === cat.id)
+    })).filter(g => g.animals.length > 0);
+  } else {
+    const catObj = CATEGORIES.find(c => c.id === activeTab) ||
+      { id:'results', label:'Results', icon:'🔍' };
+    grouped = [{ cat: catObj, animals }];
+  }
+
+  content.innerHTML = grouped.map(({ cat, animals: group }) => {
+    const s = group.filter(a => isSeen(a.id)).length;
+    const t = group.length;
+    const pct = t ? (s/t*100).toFixed(0) : 0;
+    return `<div class="category-section" data-cat="${cat.id}">
+      <div class="category-header">
+        <span class="category-icon">${cat.icon}</span>
+        <span class="category-name">${cat.label}</span>
+        <span class="category-progress-text">${s}/${t}</span>
+        <div class="category-progress-mini">
+          <div class="category-progress-mini-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="grid">
+        ${group.map(a => renderCard(a)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Attach card click listeners
+  content.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = Number(card.dataset.id);
+      openModal(ANIMALS.find(a => a.id === id));
+    });
+  });
+}
+
+function renderCard(animal) {
+  const s = isSeen(animal.id);
+  const dotColor = catColor(animal.cat);
+  const dateStr = s ? formatDate(seenDate(animal.id)) : '';
+  return `<div class="card ${s?'seen':''}" data-id="${animal.id}" title="${s?animal.name:'???'}">
+    <span class="card-number">#${padNum(animal.id)}</span>
+    <span class="card-check">✓</span>
+    <span class="card-emoji">${animal.emoji}</span>
+    <span class="card-name">${animal.name}</span>
+    <span class="card-date">${dateStr}</span>
+    <span class="card-category-dot" style="background:${dotColor}"></span>
+  </div>`;
+}
+
+// ── Wikipedia photo fetch ──────────────────────────────────────────────────
+const photoCache = {};
+
+async function fetchWikiPhoto(animal) {
+  const wrap = document.getElementById('m-photo-wrap');
+  const img = document.getElementById('m-photo');
+  const placeholder = document.getElementById('m-photo-placeholder');
+  const credit = document.getElementById('m-photo-credit');
+  const loading = document.getElementById('m-photo-loading');
+
+  // Reset state
+  wrap.classList.remove('has-photo');
+  img.classList.remove('loaded');
+  img.src = '';
+  credit.textContent = '';
+  loading.style.display = 'flex';
+  placeholder.style.display = 'none';
+
+  if (photoCache[animal.id]) {
+    applyPhoto(photoCache[animal.id]);
+    return;
+  }
+
+  // Try scientific name first, fall back to common name
+  const titles = [animal.sci.replace(/ /g,'_'), animal.name.replace(/ /g,'_')];
+  let result = null;
+  for (const title of titles) {
+    try {
+      const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.thumbnail?.source) { result = data; break; }
+    } catch { /* network error — try next */ }
+  }
+
+  // Check the modal wasn't closed/changed while we were fetching
+  if (modalAnimal?.id !== animal.id) return;
+
+  if (result?.thumbnail?.source) {
+    const src = result.thumbnail.source.replace(/\/\d+px-/, '/500px-');
+    const attribution = result.credits || (result.content_urls?.desktop?.page ? `© Wikipedia` : '© Wikipedia');
+    photoCache[animal.id] = { src, attribution };
+    applyPhoto({ src, attribution });
+  } else {
+    loading.style.display = 'none';
+    placeholder.textContent = animal.emoji;
+    placeholder.style.display = 'block';
+  }
+}
+
+function applyPhoto({ src, attribution }) {
+  const wrap = document.getElementById('m-photo-wrap');
+  const img = document.getElementById('m-photo');
+  const credit = document.getElementById('m-photo-credit');
+  const loading = document.getElementById('m-photo-loading');
+  const placeholder = document.getElementById('m-photo-placeholder');
+
+  img.onload = () => {
+    loading.style.display = 'none';
+    placeholder.style.display = 'none';
+    img.classList.add('loaded');
+    wrap.classList.add('has-photo');
+    credit.textContent = attribution;
+  };
+  img.onerror = () => {
+    loading.style.display = 'none';
+    placeholder.textContent = modalAnimal?.emoji || '?';
+    placeholder.style.display = 'block';
+  };
+  img.src = src;
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function openModal(animal) {
+  modalAnimal = animal;
+  const s = isSeen(animal.id);
+  document.getElementById('m-number').textContent = `#${padNum(animal.id)}`;
+  document.getElementById('m-name').textContent = animal.name;
+  document.getElementById('m-sci').textContent = s ? animal.sci : '— not yet identified —';
+  document.getElementById('m-cat').textContent = (CATEGORIES.find(c => c.id === animal.cat)||{}).label || animal.cat;
+  document.getElementById('m-desc').textContent = s ? animal.desc : 'Encounter this animal in the wild to unlock its entry.';
+  document.getElementById('m-range').textContent = s ? animal.range : '???';
+  const dateEl = document.getElementById('m-date');
+  dateEl.textContent = s ? `First spotted: ${formatDate(seenDate(animal.id))}` : '';
+
+  fetchWikiPhoto(animal);
+
+  const btn = document.getElementById('modal-action');
+  if (s) {
+    btn.textContent = '✗ Mark as Not Seen';
+    btn.className = 'modal-btn unseen-btn';
+  } else {
+    btn.textContent = '✓ Mark as Seen!';
+    btn.className = 'modal-btn';
+  }
+  btn.onclick = () => { toggleSeen(animal.id); closeModal(); };
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalAnimal = null;
+}
+
+// ── Toggle seen ────────────────────────────────────────────────────────────
+let toastTimer;
+function toggleSeen(id) {
+  const animal = ANIMALS.find(a => a.id === id);
+  if (isSeen(id)) {
+    delete seen[id];
+    saveSeen();
+    showToast(`Unmarked: ${animal.name}`, true);
+  } else {
+    seen[id] = new Date().toISOString();
+    saveSeen();
+    showToast(`🎉 Spotted: ${animal.name}!`, false);
+  }
+  // Animate the card
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  if (card) {
+    card.classList.toggle('seen', isSeen(id));
+    // Update inner parts
+    card.querySelector('.card-name').style.color = isSeen(id) ? 'var(--text)' : 'var(--text-muted)';
+    const emoji = card.querySelector('.card-emoji');
+    emoji.style.filter = isSeen(id) ? 'none' : 'grayscale(1) brightness(0.25)';
+    const check = card.querySelector('.card-check');
+    check.style.opacity = isSeen(id) ? '1' : '0';
+    check.style.transform = isSeen(id) ? 'scale(1)' : 'scale(0.5)';
+    const dateEl = card.querySelector('.card-date');
+    dateEl.textContent = isSeen(id) ? formatDate(seenDate(id)) : '';
+
+    card.classList.remove('reveal-anim');
+    void card.offsetWidth;
+    card.classList.add('reveal-anim');
+    card.addEventListener('animationend', () => card.classList.remove('reveal-anim'), {once:true});
+  }
+
+  updateHeaderProgress();
+  renderStats();
+  renderTabs();
+}
+
+function showToast(msg, unseen) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (unseen ? ' unseen-toast' : '') + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2200);
+}
+
+// ── Filter row ─────────────────────────────────────────────────────────────
+function initFilterRow() {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      renderContent();
+    });
+  });
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────
+function initSearch() {
+  document.getElementById('search').addEventListener('input', e => {
+    searchQuery = e.target.value.trim();
+    renderContent();
+  });
+}
+
+// ── Modal close ────────────────────────────────────────────────────────────
+function initModal() {
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+loadSeen();
+initFilterRow();
+initSearch();
+initModal();
+updateHeaderProgress();
+renderStats();
+renderTabs();
+renderContent();
+</script>
+</body>
+</html>
